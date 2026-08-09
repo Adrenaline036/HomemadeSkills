@@ -1,0 +1,33 @@
+# Private collaboration and local working state
+/local/
+/work/
+/outputs/
+/dist/
+
+# Credentials and environment-specific configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*credentials*.json
+*secrets*.json
+
+# Logs, databases, sessions, and generated archives
+*.log
+*.db
+*.sqlite
+*.sqlite3
+*.zip
+*.tar
+*.tar.gz
+*.7z
+*.bak
+
+# Common generated files
+__pycache__/
+*.py[cod]
+.DS_Store
+Thumbs.db
