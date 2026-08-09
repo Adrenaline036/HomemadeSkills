@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import csv
 import hashlib
+import json
 import os
 import re
 import shutil
@@ -28,6 +29,7 @@ except ImportError as exc:  # pragma: no cover - exercised by dependency check
 
 SUBTITLE_EXTENSIONS = {".ass", ".ssa"}
 FONT_EXTENSIONS = {".ttf", ".otf", ".ttc", ".otc"}
+FONT_PACKAGE_MANIFEST_SCHEMA = 1
 INLINE_FONT_RE = re.compile(r"\\fn([^\\})]+?)(?=\\|\)|})", re.IGNORECASE)
 INVALID_FILENAME_RE = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
 
@@ -59,6 +61,17 @@ class ParseResult:
     subtitle_count: int
     decode_errors: int
     snapshots: dict[Path, tuple[int, int]]
+
+
+@dataclass
+class FontPackageCatalog:
+    root: Path
+    manifest_path: Path
+    candidates: list[FontCandidate]
+    negative_queries: set[str]
+    inventory_fingerprint: str
+    file_count: int
+    cache_state: str
 
 
 def normalize_name(value: str) -> str:
@@ -317,6 +330,223 @@ def discover_font_files(roots: list[tuple[Path, bool]]) -> list[tuple[Path, bool
     return sorted(discovered.values(), key=lambda item: str(item[0]).casefold())
 
 
+def default_manifest_dir() -> Path:
+    local_app_data = os.environ.get("LOCALAPPDATA")
+    base = Path(local_app_data) if local_app_data else Path.home() / ".cache"
+    return base / "FontsReader" / "font-package-manifests"
+
+
+def font_root_key(root: Path) -> str:
+    normalized = os.path.normcase(str(root.resolve()))
+    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+
+
+def manifest_path_for(root: Path, manifest_dir: Path) -> Path:
+    return manifest_dir / f"{safe_filename(root.name)}-{font_root_key(root)[:12]}.json"
+
+
+def font_inventory(root: Path) -> tuple[list[Path], str]:
+    files = [path for path, _ in discover_font_files([(root, False)])]
+    digest = hashlib.sha256()
+    for path in files:
+        stat = path.stat()
+        relative = path.relative_to(root).as_posix()
+        digest.update(relative.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(str(stat.st_size).encode("ascii"))
+        digest.update(b"\0")
+        digest.update(str(stat.st_mtime_ns).encode("ascii"))
+        digest.update(b"\n")
+    return files, digest.hexdigest()
+
+
+def scan_font_files(files: list[Path], is_system: bool = False) -> list[FontCandidate]:
+    candidates: list[FontCandidate] = []
+    for path in files:
+        candidates.extend(iter_font_candidates(path, is_system))
+    return candidates
+
+
+def serialize_font_manifest(catalog: FontPackageCatalog, files: list[Path]) -> dict[str, object]:
+    faces_by_path: dict[Path, list[FontCandidate]] = defaultdict(list)
+    for candidate in catalog.candidates:
+        faces_by_path[candidate.path].append(candidate)
+
+    file_rows: list[dict[str, object]] = []
+    for path in files:
+        stat = path.stat()
+        face_rows = []
+        for candidate in sorted(faces_by_path.get(path, []), key=lambda item: item.face_index):
+            face_rows.append(
+                {
+                    "face_index": candidate.face_index,
+                    "names": sorted(candidate.names),
+                    "primary_names": sorted(candidate.primary_names),
+                    "strong_names": sorted(candidate.strong_names),
+                    "bold": candidate.bold,
+                    "italic": candidate.italic,
+                }
+            )
+        file_rows.append(
+            {
+                "relative_path": path.relative_to(catalog.root).as_posix(),
+                "size": stat.st_size,
+                "mtime_ns": stat.st_mtime_ns,
+                "faces": face_rows,
+            }
+        )
+    return {
+        "schema_version": FONT_PACKAGE_MANIFEST_SCHEMA,
+        "generator": "fonts-reader",
+        "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
+        "font_root_key": font_root_key(catalog.root),
+        "inventory_fingerprint": catalog.inventory_fingerprint,
+        "complete_scan": True,
+        "negative_queries": sorted(catalog.negative_queries),
+        "files": file_rows,
+    }
+
+
+def write_font_manifest(catalog: FontPackageCatalog, files: list[Path]) -> None:
+    catalog.manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    payload = serialize_font_manifest(catalog, files)
+    temporary = catalog.manifest_path.with_suffix(catalog.manifest_path.suffix + ".tmp")
+    temporary.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    os.replace(temporary, catalog.manifest_path)
+
+
+def build_font_catalog(root: Path, manifest_path: Path, negative_queries: set[str] | None = None) -> FontPackageCatalog:
+    files, fingerprint = font_inventory(root)
+    candidates = scan_font_files(files)
+    catalog = FontPackageCatalog(
+        root=root,
+        manifest_path=manifest_path,
+        candidates=candidates,
+        negative_queries=set(negative_queries or ()),
+        inventory_fingerprint=fingerprint,
+        file_count=len(files),
+        cache_state="built",
+    )
+    write_font_manifest(catalog, files)
+    print(
+        f"font package manifest built: {manifest_path} ({len(files)} files, {len(candidates)} faces)",
+        file=sys.stderr,
+    )
+    return catalog
+
+
+def candidate_from_manifest(root: Path, relative_path: str, face: dict[str, object]) -> FontCandidate:
+    relative = Path(relative_path)
+    if relative.is_absolute() or ".." in relative.parts:
+        raise ValueError(f"unsafe manifest path: {relative_path}")
+    path = (root / relative).resolve()
+    if not is_relative_to(path, root):
+        raise ValueError(f"manifest path escapes font root: {relative_path}")
+    return FontCandidate(
+        path=path,
+        face_index=int(face["face_index"]),
+        names=frozenset(str(item) for item in face["names"]),
+        primary_names=frozenset(str(item) for item in face["primary_names"]),
+        strong_names=frozenset(str(item) for item in face["strong_names"]),
+        bold=bool(face["bold"]),
+        italic=bool(face["italic"]),
+        is_system=False,
+    )
+
+
+def load_font_catalog(root: Path, manifest_path: Path, refresh: bool = False) -> FontPackageCatalog:
+    files, fingerprint = font_inventory(root)
+    if refresh or not manifest_path.is_file():
+        return build_font_catalog(root, manifest_path)
+
+    try:
+        payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+        if payload.get("schema_version") != FONT_PACKAGE_MANIFEST_SCHEMA:
+            raise ValueError("unsupported schema version")
+        if payload.get("font_root_key") != font_root_key(root):
+            raise ValueError("font root does not match")
+        if payload.get("inventory_fingerprint") != fingerprint:
+            raise ValueError("font inventory changed")
+        if payload.get("complete_scan") is not True:
+            raise ValueError("manifest is not a complete scan")
+
+        file_rows = payload["files"]
+        if not isinstance(file_rows, list):
+            raise ValueError("manifest files must be a list")
+        expected_paths = [path.relative_to(root).as_posix() for path in files]
+        listed_paths = [str(file_row["relative_path"]) for file_row in file_rows]
+        if len(listed_paths) != len(set(listed_paths)) or sorted(listed_paths) != sorted(expected_paths):
+            raise ValueError("manifest file inventory is incomplete")
+
+        candidates: list[FontCandidate] = []
+        for file_row in file_rows:
+            relative_path = str(file_row["relative_path"])
+            path = (root / Path(relative_path)).resolve()
+            stat = path.stat()
+            if stat.st_size != int(file_row["size"]) or stat.st_mtime_ns != int(file_row["mtime_ns"]):
+                raise ValueError(f"font metadata changed: {relative_path}")
+            for face in file_row["faces"]:
+                candidates.append(candidate_from_manifest(root, relative_path, face))
+        catalog = FontPackageCatalog(
+            root=root,
+            manifest_path=manifest_path,
+            candidates=candidates,
+            negative_queries={str(item) for item in payload.get("negative_queries", [])},
+            inventory_fingerprint=fingerprint,
+            file_count=len(files),
+            cache_state="hit",
+        )
+        print(
+            f"font package manifest hit: {manifest_path} ({len(files)} files, {len(candidates)} faces)",
+            file=sys.stderr,
+        )
+        return catalog
+    except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
+        print(f"font package manifest invalid; rebuilding {manifest_path}: {exc}", file=sys.stderr)
+        return build_font_catalog(root, manifest_path)
+
+
+def catalog_name_set(catalogs: list[FontPackageCatalog]) -> set[str]:
+    return {name for catalog in catalogs for candidate in catalog.candidates for name in candidate.names}
+
+
+def ensure_manifest_queries(
+    catalogs: list[FontPackageCatalog],
+    requested_names: set[str],
+    loose_names: set[str],
+) -> list[FontPackageCatalog]:
+    available = loose_names | catalog_name_set(catalogs)
+    unresolved = requested_names - available
+    if not unresolved:
+        return catalogs
+
+    for index, catalog in enumerate(catalogs):
+        pending = unresolved - catalog.negative_queries
+        if not pending:
+            continue
+        if catalog.cache_state == "hit":
+            print(
+                f"font package manifest miss; fallback scan: {catalog.root} ({len(pending)} names)",
+                file=sys.stderr,
+            )
+            catalog = build_font_catalog(catalog.root, catalog.manifest_path, catalog.negative_queries)
+            catalogs[index] = catalog
+
+        names_after_scan = {name for candidate in catalog.candidates for name in candidate.names}
+        confirmed_missing = pending - names_after_scan
+        if confirmed_missing:
+            catalog.negative_queries.update(confirmed_missing)
+            files, fingerprint = font_inventory(catalog.root)
+            catalog.inventory_fingerprint = fingerprint
+            catalog.file_count = len(files)
+            write_font_manifest(catalog, files)
+        available = loose_names | catalog_name_set(catalogs)
+        unresolved = requested_names - available
+        if not unresolved:
+            break
+    return catalogs
+
+
 def sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -422,17 +652,27 @@ def is_relative_to(path: Path, other: Path) -> bool:
 def process_series(
     series_root: Path,
     output_root: Path,
-    font_roots: list[tuple[Path, bool]],
+    font_catalogs: list[FontPackageCatalog],
+    system_roots: list[tuple[Path, bool]],
     mode: str,
     archive_system_fonts: bool,
     stamp: str,
 ) -> dict[str, object]:
     parsed = parse_series(series_root)
-    roots = [(series_root, False), *font_roots]
-    files = discover_font_files(roots)
-    candidates: list[FontCandidate] = []
-    for path, is_system in files:
-        candidates.extend(iter_font_candidates(path, is_system))
+    loose_files = [path for path, _ in discover_font_files([(series_root, False)])]
+    loose_candidates = scan_font_files(loose_files)
+    requested_names = {request.normalized_name for request in parsed.requests.values()}
+    loose_names = {name for candidate in loose_candidates for name in candidate.names}
+    ensure_manifest_queries(font_catalogs, requested_names, loose_names)
+    package_candidates = [candidate for catalog in font_catalogs for candidate in catalog.candidates]
+    preferred_candidates = [*loose_candidates, *package_candidates]
+
+    preferred_names = {name for candidate in preferred_candidates for name in candidate.names}
+    system_candidates: list[FontCandidate] = []
+    if requested_names - preferred_names:
+        system_files = discover_font_files(system_roots)
+        system_candidates = scan_font_files([path for path, _ in system_files], is_system=True)
+    candidates = [*preferred_candidates, *system_candidates]
 
     hashes: dict[Path, str] = {}
     results: list[tuple[FontRequest, str, list[FontCandidate], str]] = []
@@ -510,9 +750,11 @@ def process_series(
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=["audit", "collect"])
-    parser.add_argument("--series", action="append", required=True, type=Path, help="Series directory; repeat for multiple series")
+    parser.add_argument("mode", choices=["index", "audit", "collect"])
+    parser.add_argument("--series", action="append", default=[], type=Path, help="Series directory; repeat for multiple series")
     parser.add_argument("--font-root", action="append", default=[], type=Path, help="Additional font library; repeat as needed")
+    parser.add_argument("--manifest-dir", type=Path, help="Font-package metadata directory; defaults to the local FontsReader cache")
+    parser.add_argument("--refresh-font-manifest", action="store_true", help="Ignore cached package metadata and rebuild it")
     parser.add_argument("--output-root", type=Path, default=Path.home() / "Desktop")
     parser.add_argument("--no-system-fonts", action="store_true", help="Do not scan the Windows Fonts directory")
     parser.add_argument("--archive-system-fonts", action="store_true", help="In collect mode, copy selected Windows fonts to the supplementary archive")
@@ -523,34 +765,63 @@ def main() -> int:
     args = build_parser().parse_args()
     series_roots = [path.expanduser().resolve() for path in args.series]
     output_root = args.output_root.expanduser().resolve()
+    manifest_dir = (args.manifest_dir or default_manifest_dir()).expanduser().resolve()
     for path in series_roots:
         if not path.is_dir():
             raise SystemExit(f"Series directory is inaccessible: {path}")
         if is_relative_to(output_root, path):
             raise SystemExit(f"Output root must be outside the series directory: {output_root}")
 
-    roots: list[tuple[Path, bool]] = []
+    system_roots: list[tuple[Path, bool]] = []
     if not args.no_system_fonts:
         system_root = os.environ.get("WINDIR") or os.environ.get("SystemRoot")
         if not system_root:
             raise SystemExit("WINDIR/SystemRoot is not defined; pass --no-system-fonts or configure the Windows environment")
         windows_dir = Path(system_root) / "Fonts"
         if windows_dir.is_dir():
-            roots.append((windows_dir.resolve(), True))
+            system_roots.append((windows_dir.resolve(), True))
         else:
             raise SystemExit(f"Windows font directory is inaccessible: {windows_dir}")
+    font_roots: list[Path] = []
     for path in args.font_root:
         resolved = path.expanduser().resolve()
         if not resolved.is_dir():
             raise SystemExit(f"Font root is inaccessible: {resolved}")
-        roots.append((resolved, False))
+        font_roots.append(resolved)
+    for protected_root in [*series_roots, *font_roots]:
+        if is_relative_to(manifest_dir, protected_root):
+            raise SystemExit(f"Manifest directory must be outside read-only input roots: {manifest_dir}")
+
+    if args.mode == "index":
+        if series_roots:
+            raise SystemExit("index mode does not accept --series")
+        if not font_roots:
+            raise SystemExit("index mode requires at least one --font-root")
+        catalogs = [
+            load_font_catalog(root, manifest_path_for(root, manifest_dir), refresh=args.refresh_font_manifest)
+            for root in font_roots
+        ]
+        print("font_root\tmanifest\tfiles\tfaces\tstate")
+        for catalog in catalogs:
+            print(
+                f"{catalog.root}\t{catalog.manifest_path}\t{catalog.file_count}\t"
+                f"{len(catalog.candidates)}\t{catalog.cache_state}"
+            )
+        return 0
+
+    if not series_roots:
+        raise SystemExit(f"{args.mode} mode requires at least one --series")
+    font_catalogs = [
+        load_font_catalog(root, manifest_path_for(root, manifest_dir), refresh=args.refresh_font_manifest)
+        for root in font_roots
+    ]
 
     if args.archive_system_fonts and args.mode != "collect":
         raise SystemExit("--archive-system-fonts is valid only in collect mode")
     output_root.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     summaries = [
-        process_series(path, output_root, roots, args.mode, args.archive_system_fonts, stamp)
+        process_series(path, output_root, font_catalogs, system_roots, args.mode, args.archive_system_fonts, stamp)
         for path in series_roots
     ]
     field_order = ["series", "output", "subtitles", "decode_errors", "requests", "matched", "missing", "ambiguous", "packaged_files"]

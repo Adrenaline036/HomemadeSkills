@@ -1,6 +1,6 @@
 ---
 name: fonts-reader
-description: Audit anime ASS/SSA subtitles, identify fonts actually used by dialogue styles and inline overrides, prefer exact matches from user font libraries or series files, fall back to Windows fonts only when that preferred tier has no exact match, and collect one editable per-series font folder with manifests and hashes. Use when Codex or TRAE is asked to read animation directories, find subtitle fonts, prepare Jellyfin subtitle fonts, report missing or ambiguous fonts, archive fonts copied from the local Windows installation, or build a subtitle-font package without changing media files.
+description: Audit anime ASS/SSA subtitles, identify fonts actually used by dialogue styles and inline overrides, accelerate repeated package lookups with a local metadata manifest, prefer exact matches from user font libraries or series files, fall back to Windows fonts only when that preferred tier has no exact match, and collect one editable per-series font folder with manifests and hashes. Use when Codex or TRAE is asked to read animation directories, find subtitle fonts, prepare Jellyfin subtitle fonts, report missing or ambiguous fonts, archive fonts copied from the local Windows installation, or build a subtitle-font package without changing media files.
 ---
 
 # FontsReader
@@ -29,6 +29,28 @@ Obtain or infer:
 4. Whether to create the supplementary archive for fonts selected from the Windows font directory.
 
 Verify every path live. If a requested path is inaccessible, report it instead of silently omitting it.
+
+## Build and reuse font-package metadata
+
+Index each large user font library before the first subtitle audit:
+
+```powershell
+python -X utf8 .\scripts\fonts_reader.py index `
+  --font-root "$env:FONT_LIBRARY_ROOT"
+```
+
+The helper writes local JSON metadata under `%LOCALAPPDATA%\FontsReader\font-package-manifests` by default. Pass `--manifest-dir` to choose another cache directory, or `--refresh-font-manifest` to force a full rebuild. Keep this cache outside the read-only font library.
+
+The metadata records a relative font path, file size and modification time, the package inventory fingerprint, every TTC/OTC face, normalized internal names, primary and strong names, and bold/italic attributes. It never stores the machine-specific absolute font-library path and does not add origin fields to the delivered series manifest.
+
+`audit` and `collect` load this metadata automatically for every `--font-root`:
+
+1. If the inventory fingerprint and file metadata still match, use indexed faces before opening font files.
+2. If metadata is absent, corrupt, from another root, or the font inventory changed, rebuild it with a complete scan.
+3. If a newly requested exact name is absent from an otherwise valid cache, perform one fallback full scan. Record a confirmed negative lookup so the unchanged package is not rescanned for that name on later runs.
+4. Continue to search loose series fonts directly and use Windows fonts only after the whole preferred tier has no exact candidate.
+
+The package metadata is an acceleration cache. It does not replace the delivered `font-manifest.csv`, change matching priority, split the unified `Fonts/` directory, or authorize writes into a font library.
 
 ## Run two gates
 
@@ -94,12 +116,13 @@ For every series:
 4. Confirm missing and ambiguous requests remain visible and no guessed font was copied for them.
 5. Confirm the number of parsed subtitle files, decode errors, unique requested faces, matched faces, missing faces, and ambiguous faces.
 6. If Windows fonts were archived, compare their hashes with the corresponding unified package files.
+7. For a large reusable font library, run `index` twice and confirm the first run reports `built` and the unchanged second run reports `hit`. When testing a cache miss, confirm only the first new absent query reports `fallback scan`; the next unchanged run must use the recorded negative lookup.
 
 Label the evidence accurately: parser/helper test, local filesystem collection, MKV attachment inspection, Jellyfin playback, and user acceptance are separate layers. Font collection alone does not prove Jellyfin rendering or playback.
 
 ## Use the bundled resources
 
-- Use `scripts/fonts_reader.py` for deterministic audit and collection.
+- Use `scripts/fonts_reader.py` for deterministic font-package indexing, audit, and collection.
 - Use `scripts/install-trae-project-skill.ps1` to install this same folder into a TRAE project's `.agents/skills/FontsReader` directory with duplicate protection and recoverable replacement.
 - Use `assets/AGENTS.template.md` only when a repository needs a short tracked entrypoint that tells agents to load this Skill.
 
