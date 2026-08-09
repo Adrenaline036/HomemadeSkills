@@ -13,6 +13,7 @@
 
 | 目录 | 用途 |
 |---|---|
+| [`FontsReader`](FontsReader/SKILL.md) | 只读审计动画 ASS/SSA 字幕并精确收集实际使用的字体，生成可二次加工的系列字体文件夹、清单和校验值 |
 | [`MultiAgentProjectGuide`](MultiAgentProjectGuide/SKILL.md) | 协调多智能体开发、审查、项目日志、GitHub、CI、部署和交接 |
 
 ## TRAE 安装

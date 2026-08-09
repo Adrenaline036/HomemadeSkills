@@ -1,0 +1,4 @@
+interface:
+  display_name: "FontsReader"
+  short_description: "精确审计动画字幕字体并生成可二次加工的系列字体文件夹"
+  default_prompt: "Use $fonts-reader to audit anime subtitles and collect the exact required fonts into one editable per-series folder."
