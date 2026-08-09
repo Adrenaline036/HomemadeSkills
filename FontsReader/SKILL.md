@@ -1,6 +1,6 @@
 ---
 name: fonts-reader
-description: Audit anime ASS/SSA subtitles, identify fonts actually used by dialogue styles and inline overrides, match exact internal font names across Windows fonts, user font libraries, loose series fonts, and optional MKV attachments, then collect one editable per-series font folder with manifests and hashes. Use when Codex or TRAE is asked to read animation directories, find subtitle fonts, prepare Jellyfin subtitle fonts, report missing or ambiguous fonts, archive fonts copied from the local Windows installation, or build a subtitle-font package without changing media files.
+description: Audit anime ASS/SSA subtitles, identify fonts actually used by dialogue styles and inline overrides, prefer exact matches from user font libraries or series files, fall back to Windows fonts only when that preferred tier has no exact match, and collect one editable per-series font folder with manifests and hashes. Use when Codex or TRAE is asked to read animation directories, find subtitle fonts, prepare Jellyfin subtitle fonts, report missing or ambiguous fonts, archive fonts copied from the local Windows installation, or build a subtitle-font package without changing media files.
 ---
 
 # FontsReader
@@ -16,6 +16,8 @@ Collect subtitle fonts conservatively and reproducibly. Use this same package in
 - Do not add origin columns or `source-package` / `workstation-supplement` fields to manifests, recommendations, or automation output.
 - Preserve original font filenames. Deduplicate identical files by SHA-256 and disambiguate different files with colliding filenames.
 - Never substitute a similar font for a missing exact face unless the user explicitly approves that exact substitution after reviewing the report.
+- Search loose series fonts, verified temporary MKV attachments, and user-supplied font libraries as one preferred tier. Search Windows fonts only when that entire preferred tier has no exact internal-name candidate for the request.
+- If the preferred tier contains exact candidates but they are style-mismatched or ambiguous, keep their normal `matched`/`ambiguous` result. Do not replace them with a Windows candidate merely because Windows has a closer style or a single candidate.
 
 ## Establish inputs
 
@@ -23,7 +25,7 @@ Obtain or infer:
 
 1. One or more series directories.
 2. The output root; default to the current user's Desktop only when the user did not choose another location.
-3. Font search roots. Include the Windows font directory and every user-supplied shared font library. Resolve machine-specific library paths from the current request or environment; never hardcode or publish them.
+3. Font search roots. Treat every user-supplied shared font library as preferred and the Windows font directory as fallback-only. Resolve machine-specific library paths from the current request or environment; never hardcode or publish them.
 4. Whether to create the supplementary archive for fonts selected from the Windows font directory.
 
 Verify every path live. If a requested path is inaccessible, report it instead of silently omitting it.
@@ -51,6 +53,7 @@ The helper parses `.ass` and `.ssa` files without editing them. It must:
 - retain requested bold/italic face information;
 - scan every face in `.ttc` and `.otc` collections before closing the collection;
 - match normalized internal Family, Typographic Family, Full, PostScript, and compatible name records, not filenames alone;
+- complete matching against the preferred tier before considering Windows fonts, falling back to Windows only when the preferred tier contains no exact internal-name candidate;
 - report different exact candidates as `ambiguous` and absent exact names as `missing`.
 
 Review `subtitle-inventory.csv` and `font-manifest.csv`. For unresolved names, inspect loose font files in the series directory. If `mkvmerge` and `mkvextract` are available, list relevant MKV attachments and inspect embedded font faces in a temporary output location. Do not extract or modify media in place. Rerun the audit with any verified temporary attachment directory passed as another `--font-root`.

@@ -325,10 +325,11 @@ def sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def match_request(request: FontRequest, candidates: list[FontCandidate], hashes: dict[Path, str]) -> tuple[str, list[FontCandidate], str]:
-    exact = [candidate for candidate in candidates if request.normalized_name in candidate.names]
-    if not exact:
-        return "missing", [], "no exact internal-name match"
+def match_exact_candidates(
+    request: FontRequest,
+    exact: list[FontCandidate],
+    hashes: dict[Path, str],
+) -> tuple[str, list[FontCandidate], str]:
     primary = [candidate for candidate in exact if request.normalized_name in candidate.primary_names]
     strong = [candidate for candidate in exact if request.normalized_name in candidate.strong_names]
     tiers = [
@@ -355,6 +356,25 @@ def match_request(request: FontRequest, candidates: list[FontCandidate], hashes:
         chosen = min(pool, key=lambda candidate: str(candidate.path).casefold())
         return "matched", [chosen], "duplicate exact files had identical SHA-256"
     return "ambiguous", [], f"{len(unique_paths)} different exact files require review"
+
+
+def match_request(request: FontRequest, candidates: list[FontCandidate], hashes: dict[Path, str]) -> tuple[str, list[FontCandidate], str]:
+    preferred_exact = [
+        candidate
+        for candidate in candidates
+        if not candidate.is_system and request.normalized_name in candidate.names
+    ]
+    if preferred_exact:
+        return match_exact_candidates(request, preferred_exact, hashes)
+
+    system_exact = [
+        candidate
+        for candidate in candidates
+        if candidate.is_system and request.normalized_name in candidate.names
+    ]
+    if system_exact:
+        return match_exact_candidates(request, system_exact, hashes)
+    return "missing", [], "no exact internal-name match"
 
 
 def unique_output_dir(output_root: Path, series_name: str, mode: str, stamp: str) -> Path:
