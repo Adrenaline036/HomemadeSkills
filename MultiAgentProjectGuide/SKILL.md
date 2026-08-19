@@ -153,6 +153,12 @@ Do not log conversation, planning, review-only work, file reading, unchanged dia
 4. Never promote evidence between layers. A clean diff is not a passing test; a healthy container is not functional acceptance; local success is not deployment proof; queued, cancelled, skipped, stale, or unrun CI is not passing.
 5. Tie every test and CI result to the exact commit or artifact. Record failed and flaky attempts, not only the eventual pass.
 
+## Audit production readiness
+
+Read [references/production-readiness-review.md](references/production-readiness-review.md) before approving a change that mutates durable/live data, changes a production entrypoint or recovery state machine, or supports a deployment claim. Also read it immediately after live evidence invalidates a locally approved candidate.
+
+Require proof from the real production entrypoint through persisted state, execution, registration, and recovery. Component tests, rendered buttons, synthetic downstream snapshots, and direct calls to internal services remain component evidence unless the production path itself creates and consumes those states. Every reachable non-terminal state must have a tested retry, repair/rebind, or non-destructive abandon exit. A candidate cannot advance while any production-path, authority, fault, or operator-closure obligation is uncovered.
+
 ## Git, GitHub, release, and deployment
 
 - Commit only intentional files after reviewing staged diff and secret exposure. Do not include unrelated changes to make the tree clean.
