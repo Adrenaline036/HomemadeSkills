@@ -46,11 +46,25 @@ if (-not (Test-Path -LiteralPath $installedSkill -PathType Leaf)) {
     throw "TRAE Skill installation verification failed at $destinationPath"
 }
 
-$sourceHash = (Get-FileHash -LiteralPath $skillFile -Algorithm SHA256).Hash
-$installedHash = (Get-FileHash -LiteralPath $installedSkill -Algorithm SHA256).Hash
-if ($sourceHash -ne $installedHash) {
-    throw 'TRAE Skill hash verification failed.'
+function Get-PackageInventory {
+    param([Parameter(Mandatory = $true)][string]$Root)
+
+    Get-ChildItem -LiteralPath $Root -Recurse -File | ForEach-Object {
+        [PSCustomObject]@{
+            RelativePath = $_.FullName.Substring($Root.Length).TrimStart('\')
+            Length       = $_.Length
+            SHA256       = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash
+        }
+    } | Sort-Object RelativePath
+}
+
+$sourceInventory = @(Get-PackageInventory -Root $packagePath)
+$installedInventory = @(Get-PackageInventory -Root $destinationPath)
+$inventoryDiff = @(Compare-Object $sourceInventory $installedInventory -Property RelativePath, Length, SHA256)
+if ($inventoryDiff.Count -ne 0) {
+    throw "TRAE Skill package verification failed with $($inventoryDiff.Count) inventory difference(s)."
 }
 
 Write-Output "Installed TRAE project Skill: $destinationPath"
+Write-Output "Verified package files: $($sourceInventory.Count)"
 Write-Output 'Reload TRAE, then verify the Skill in Settings -> Rule & Skills -> Skills.'
