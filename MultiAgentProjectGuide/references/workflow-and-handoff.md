@@ -43,6 +43,7 @@ Before writing, create or update a claim with:
 - owned files/subsystem/environment and read-only dependencies;
 - allowed and forbidden actions;
 - expected output and acceptance method;
+- superseded contracts/paths, permitted legacy adapters, and required negative evidence when replacing behavior;
 - stop condition and status.
 
 Do not begin overlapping writes when another claim owns the same object. Coordinate, become read-only, or isolate the work and designate one integrator.
@@ -63,6 +64,10 @@ Classify the conclusion:
 - `unknown`: current evidence cannot decide.
 
 Inspect logs, real entrypoints, persisted state, state transitions, and runtime behavior before modifying code. “The code appears to do this” is code evidence, not runtime reachability.
+
+## Contract replacement and migration
+
+For a replacement of existing behavior, use: read-only producer/consumer inventory → incident-shaped failing test → canonical path → migrate all callers and consumers → old-path zero or enumerated read-only adapters → disconnect/anti-bypass test → acceptance. Declare the canonical authority and what it supersedes before implementation. Stop while any inventory item is unknown or any legacy path can still produce an accepted or executable state.
 
 ## Implementation and verification
 
@@ -120,6 +125,8 @@ Record owner, time, reason, and verification evidence. Another model's finding i
 - Allowed actions:
 - Forbidden actions:
 - Existing evidence:
+- Superseded/legacy paths in scope:
+- Anti-bypass evidence required:
 - Questions to answer:
 - Acceptance method:
 - Required return format:
@@ -138,6 +145,9 @@ Record owner, time, reason, and verification evidence. Another model's finding i
 - Commands/UI actions actually run:
 - Files/state changed:
 - Exact results:
+- Producer/consumer inventory and unknown count:
+- Remaining bypass/legacy paths:
+- Anti-bypass/disconnect results:
 - Findings/decisions:
 - Failed attempts:
 - Unknown/unverified:
@@ -215,6 +225,9 @@ Stop before the next gate when:
 - rollback or exit is absent;
 - privacy boundaries cannot be satisfied;
 - live counterevidence invalidates the candidate.
+- a producer/consumer inventory contains unknown items;
+- a superseded path or alternate writer can still reach an accepted state;
+- real-entry tests still pass after the canonical authority is disconnected.
 
 Complete safe read-only checks, record the evidence and minimum recovery input, and do not claim blockage merely because the task is difficult.
 

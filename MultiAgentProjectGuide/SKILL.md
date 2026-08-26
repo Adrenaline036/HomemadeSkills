@@ -40,9 +40,11 @@ Use a pausable flow: intake → preflight → claim → diagnosis → implementa
 
 - For document responsibilities, naming compatibility, privacy, archiving, evidence/ADR placement, or when creating/auditing collaboration files, read [references/collaboration-records.md](references/collaboration-records.md). Copy the unique templates from `assets/`; do not maintain divergent copies in project prose.
 - For multi-stage work, uncertain diagnosis, cross-agent requests/returns, independent review, findings, context snapshots, runtime adapters, or checkpoints, read [references/workflow-and-handoff.md](references/workflow-and-handoff.md).
-- Before durable/live mutation, production-entry or recovery-state changes, deployment claims, or after live evidence invalidates a candidate, read [references/production-readiness-review.md](references/production-readiness-review.md).
+- Before durable/live mutation, production-entry or recovery-state changes, replacing an authority, contract, or execution path, deployment claims, or after live evidence invalidates a candidate, read [references/production-readiness-review.md](references/production-readiness-review.md).
 
 Diagnose uncertain or recurring failures before fixing. Make the smallest coherent change within the claim, verify focused behavior before broader layers, disposition every finding with evidence, and pause at the named gate.
+
+When replacing existing behavior, treat supersession as a separate proof obligation: inventory every producer, consumer, and bypass; declare the canonical path and any permitted read-only adapter; and require evidence that superseded logic can no longer create an accepted or executable state.
 
 ## External actions and stopping
 

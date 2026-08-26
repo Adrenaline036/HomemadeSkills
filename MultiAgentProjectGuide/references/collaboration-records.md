@@ -59,7 +59,7 @@ Priority convention:
 
 Copy [the development-log template](../assets/development_log.template.md) only when the project has no authoritative equivalent.
 
-Record substantive changes to code behavior, configuration or environment contract, schema/database/migration, tests, build/artifact, release/deployment/rollback, or operations. Tie each entry to the requirement or finding, baseline, validation, evidence path, external state, rollback, remaining risks, and related `REVIEW.md` IDs.
+Record substantive changes to code behavior, configuration or environment contract, schema/database/migration, tests, build/artifact, release/deployment/rollback, or operations. Tie each entry to the requirement or finding, baseline, validation, evidence path, external state, rollback, remaining risks, and related `REVIEW.md` IDs. For contract/path replacement, also record the superseded paths, retained compatibility adapters, producer/consumer inventory status, and negative or disconnect evidence that blocks bypass.
 
 Do not log complete chats, plans, ordinary discussion, read-only inspection, unchanged diagnosis, review-only work, ordinary formatting/documentation, temporary coordination already in `REVIEW.md`, or bulk raw logs. Put raw output in the evidence directory and link it.
 
