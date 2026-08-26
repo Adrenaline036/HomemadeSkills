@@ -42,7 +42,9 @@ Copy [the REVIEW template](../assets/REVIEW.template.md) when creating a collabo
 
 - The current coordinator is the sole writer for `Current state`; rewrite that section as a compact dashboard of now.
 - Preserve and append authorization, claims, decisions, questions, findings, gates, dispositions, and session history.
-- Update after role or scope change, checkpoint, material failure, review return, finding disposition, external-state change, or handoff. An unchanged read-only check does not need another history entry.
+- Update after role or scope change, checkpoint, material failure, review return, finding disposition, external-state change, or handoff. An incidental unchanged read-only check does not need another history entry, but every assigned review requires a durable structured return even when it finds no issues.
+- Read-only review forbids unapproved implementation/runtime mutation; it does not forbid collaboration output. A reviewer with explicit append authority records its claim, findings, gate evidence, or session without rewriting `Current state`. Otherwise it returns the same structured material to the coordinator/integrator who owns the file, and that owner persists it.
+- Name the review output path/channel and record owner in the request. A review is not complete until its return is written to the authorized record or acknowledged through the named handoff channel.
 - A claim names agent/runtime/role, base, owned/read-only scope, allowed and forbidden actions, output, acceptance, stop condition, and status.
 - A finding remains intact. Its implementer may mark `fixed`, `accepted-risk`, `deferred`, `not-reproducible`, or `disagreed`, but must provide owner, time, and evidence. Close only after verification or explicit risk acceptance.
 - Keep `proposal`, `accepted`, `rejected`, and `superseded` decisions distinct. Track open questions by the evidence needed and which gate they block.

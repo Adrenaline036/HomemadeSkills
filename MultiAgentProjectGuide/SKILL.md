@@ -23,6 +23,7 @@ Before writing:
 - Isolate parallel writes with non-overlapping scope or separate branches/worktrees fixed to a base commit. Require the returning commit or patch and a base-drift report.
 - Preserve unrelated user and agent changes. Do not reset, clean, discard, stash, rebase, amend, force-push, or overwrite unknown work merely to obtain a clean tree.
 - Name role transitions among coordinator, implementer, reviewer, tester, release operator, and deployer. Self-review is never independent review.
+- “Read-only reviewer” limits mutation of implementation files, artifacts, runtime, external systems, and durable data; it never means silent review. Every reviewer must produce a durable structured return. If authorized, append findings or a review session to the collaboration record; otherwise return them to its designated writer for persistence.
 - Do not create extra agents merely because this Skill loaded. Delegate only bounded, independent work that benefits from parallel or independent evidence and has a safe ownership boundary.
 
 ## Records and evidence

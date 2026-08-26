@@ -98,6 +98,14 @@ An independent reviewer receives a fixed commit, patch, or artifact; the objecti
 
 The reviewer returns what was actually read and run, the reviewed baseline, reproducible findings, failed attempts, uncovered scope, base drift, and external-state status. “Looks good” without this evidence is incomplete.
 
+“Read-only reviewer” describes mutation authority, not communication duty. Unless separately authorized, the reviewer must not edit implementation files, artifacts, configuration, runtime state, external systems, or durable data. It must still produce a durable review return. A no-findings result must record the baseline, coverage, commands or inspection performed, failed attempts, unknowns, external-state status, and next gate; silence is never a completed review.
+
+Every review request must name the output path or channel and its record owner:
+
+- If the reviewer is explicitly authorized to append to `REVIEW.md`, it may add its claim, findings, gate evidence, and review session, but must not rewrite coordinator-owned `Current state` or another agent's entries.
+- If one coordinator/integrator owns the shared record, the reviewer returns the structured result to that owner, who persists it without changing the reviewer's meaning or evidence.
+- If no writable shared filesystem exists, use the named return channel and require acknowledgment or a persisted handoff reference. Do not mark the review complete until the result is written or acknowledged by the record owner.
+
 Disposition every finding as one of:
 
 ```text
@@ -125,6 +133,7 @@ Record owner, time, reason, and verification evidence. Another model's finding i
 - Allowed actions:
 - Forbidden actions:
 - Existing evidence:
+- Review output path/channel and record owner:
 - Superseded/legacy paths in scope:
 - Anti-bypass evidence required:
 - Questions to answer:
@@ -153,6 +162,7 @@ Record owner, time, reason, and verification evidence. Another model's finding i
 - Unknown/unverified:
 - Base drift observed:
 - External state changed or unchanged:
+- Review record written, or handoff recipient and acknowledgment:
 - Handoff/next gate:
 ```
 
