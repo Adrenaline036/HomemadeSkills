@@ -47,6 +47,8 @@
 - Forbidden actions: <exact actions>
 - Expected output: <commit / patch / findings / report / artifact>
 - Acceptance method: <tests / review / UI path / user acceptance>
+- Superseded contracts/paths and allowed adapters: <none or exact list>
+- Required negative/anti-bypass evidence: <none or exact proof>
 - Stop condition: <where the agent must pause>
 - Status: active / handed-off / complete / withdrawn
 - Completion/handoff evidence: <when status changes>
@@ -96,6 +98,8 @@
 - Required before: <next action>
 - Required evidence:
 - Current evidence:
+- Producer/consumer inventory and unknown count:
+- Supersession/anti-bypass evidence:
 - Pass criterion:
 - Stop condition:
 - Result: pending / passed / failed / withdrawn
@@ -113,6 +117,7 @@
 - Commands/UI actions and exact results:
 - Failed/flaky attempts:
 - Confirmed facts:
+- Superseded/remaining legacy paths:
 - Inferences/hypotheses:
 - Unknown/unverified:
 - Findings opened/updated/closed:

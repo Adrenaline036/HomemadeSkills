@@ -18,6 +18,10 @@ Append entries in the project's established chronological order. Do not rewrite 
 - Changed:
   - <file/config/schema/test/build/deployment change>
   - <observable behavior difference>
+- Superseded/removed paths:
+  - <none or exact contracts/callers/writers retired>
+- Retained compatibility adapters:
+  - <none or exact read-only adapters and limits>
 - Reason:
   - <why this change was necessary>
 - Compatibility and data impact:
@@ -25,6 +29,10 @@ Append entries in the project's established chronological order. Do not rewrite 
 - Validation:
   - `<exact command or UI path>` → <exact result / exit code>
   - `<second check>` → <exact result>
+- Producer/consumer inventory:
+  - <complete/unknown count and evidence>
+- Anti-bypass validation:
+  - <negative/disconnect test and exact result, or not applicable>
 - Failed/flaky attempts:
   - <attempt and result, or none>
 - Evidence layer: proposal / code-confirmed / static-confirmed / focused-test-confirmed / local-entrypoint-confirmed / container-confirmed / remote-live-tested / user-accepted

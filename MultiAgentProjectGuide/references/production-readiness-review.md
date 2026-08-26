@@ -27,6 +27,8 @@ For every release-critical requirement, record:
 | Reachability | Call or event path from that entrypoint to the new implementation |
 | State sequence | Persisted states and transitions created by the real path |
 | Authority | Single source of truth for identity, revision, approval, and recovery routing |
+| Supersession | Canonical replacement, superseded paths, allowed read-only adapters, and complete producer/consumer inventory |
+| Anti-bypass | Negative or disconnect evidence that no alternate or legacy path reaches an accepted or executable state |
 | Side effects | Files, database rows, messages, remote calls, or live resources changed |
 | Failure cases | Fault injection before and after each durable boundary |
 | Operator closure | Retry, repair/rebind, or safe abandon action for every non-terminal state |
@@ -42,7 +44,23 @@ A requirement is uncovered until every applicable column has a named test or obs
 - Inspect both static reachability and an observed runtime trace, persisted transition, or spy at the production boundary.
 - Verify ordinary control flows as well as the new feature so specialized routing does not hijack unrelated work.
 
-## 4. Exercise a real state sequence
+## 4. Prove supersession and anti-bypass
+
+When a change replaces an authority, contract, state transition, or execution path, proving that the new path works is only half of the obligation. Also prove that the superseded path cannot remain an accidental authority.
+
+1. Build a read-only inventory of every definition, production and test caller, persisted consumer, UI/API/scheduler/worker/batch/replay/recovery entry, compatibility adapter, and direct save, patch, or mutation point.
+2. Classify each item as canonical, superseded, permitted read-only adapter, or unknown. Promotion is blocked while the unknown count is nonzero.
+3. Declare one canonical writer or authority and the exact contracts or paths it supersedes. Compatibility code may translate or read legacy state only when explicitly allowed; it must not create new accepted state through the old contract.
+4. Require both positive and negative proof: the canonical path produces the intended result, and every bypass, second writer, direct mutation, or legacy producer is absent, rejected, or fail-closed.
+5. For high-risk migrations, enforce a machine-readable call-site allowlist, structural/static gate, or equivalent test so an unregistered caller, second implementation, or forbidden direct save fails validation.
+6. Disconnect or disable the canonical authority and exercise every real production entry. Each entry must fail closed. If a test still succeeds while the authority is disconnected, it does not prove production wiring.
+7. Carry a mandatory current schema/revision/fingerprint/receipt across persistence, approval, execution, and recovery. An optional boolean or marker is not proof of current authority.
+8. Treat legacy objects as read-only or stale and provide replan, repair/rebind, or safe abandon. Never silently fall back to superseded logic.
+9. Preserve the decisive incident shape in regression fixtures, including state order, overlapping relationships, persistence boundaries, and input/provider shape. A simplified happy-path fixture cannot close an incident-shaped obligation.
+
+A safe migration sequence is: inventory → incident-shaped failing test → canonical path → migrate every producer and consumer → reduce old paths to zero or enumerated read-only adapters → disconnect/anti-bypass tests → acceptance. Stop at the first unknown or reachable bypass.
+
+## 5. Exercise a real state sequence
 
 Run at least one test through the same public entry and transitions an operator uses:
 
@@ -61,9 +79,10 @@ request/task creation
 - Synthetic fixtures remain useful for unit and UI tests, but label them as component evidence. They cannot promote a release by themselves.
 - At every transition, assert identity, backend, key, revision, fingerprint, approval, and failure-routing fields against one authoritative state source.
 - Reject stale approvals and split-brain projections. Execution, UI, and recovery must resolve the same frozen identity through the same contract rather than infer it independently.
+- Treat `awaiting_user`, `pending_review`, or an equivalent operator-decision state as intermediate, never as successful completion. Prove persistence, restart, resumption, and the eventual execution or safe-exit chain.
 - Prefer structured failure codes and frozen identifiers over parsing user-facing error strings.
 
-## 5. Audit failures and partial success
+## 6. Audit failures and partial success
 
 Inject or reproduce failures at every durable boundary, including:
 
@@ -77,7 +96,7 @@ Inject or reproduce failures at every durable boundary, including:
 
 For each case, prove idempotency, no silent overwrite, no duplicate side effects, preserved audit evidence, and an accurate user-visible state. Test restart and recovery against persisted records, not only in-memory objects.
 
-## 6. Require recovery and safe abandon closure
+## 7. Require recovery and safe abandon closure
 
 Every reachable non-terminal state must have at least one truthful, usable exit:
 
@@ -91,7 +110,7 @@ The abandon path must be explicit and confirmed. By default it may remove active
 
 No task may be trapped because the only offered recovery requires evidence that the product already knows is missing. If no safe automated recovery exists, provide a non-destructive closure plus clear residual-risk reporting.
 
-## 7. Rebuild candidate identity and evidence
+## 8. Rebuild candidate identity and evidence
 
 After the production-path and recovery contracts pass:
 
@@ -103,20 +122,23 @@ After the production-path and recovery contracts pass:
 
 An artifact may be called a candidate after local gates pass. It must not be called deployable or production-accepted until the required limited-live gate passes.
 
-## 8. Perform independent review against the matrix
+## 9. Perform independent review against the matrix
 
 The independent reviewer must receive the raw diff, tests, proof-obligation matrix, incident counterexample, and exact candidate identity. The reviewer must:
 
 - inspect the real entrypoint and reachability, not only the new component;
+- inspect the complete producer/consumer inventory, require an unknown count of zero, and enumerate every retained legacy adapter;
+- disconnect the canonical authority and verify real-entry tests fail closed rather than succeeding through a bypass;
 - check that the end-to-end fixture does not inject downstream state that production should create;
 - verify each recovery action reaches the claimed command and changes the correct authoritative state;
 - independently rerun focused tests and a representative full suite;
 - compare evidence claims to actual outputs and identify uncovered matrix cells;
 - report whether removing production wiring or breaking an exit path would make a test fail.
+- reject skipped tests, expected failures, broad exception wrappers, or mocks that let a broken bypass/disconnect scenario appear green.
 
 Self-review and a second model reviewing only prose are not independent verification.
 
-## 9. Use a bounded live acceptance gate
+## 10. Use a bounded live acceptance gate
 
 - Use an isolated target, reversible configuration, representative failing scenario, and an ordinary unaffected control case.
 - Capture pre-change state, backup/rollback method, artifact identity, exact actions, expected transitions, and stop conditions.
@@ -134,3 +156,5 @@ End the review with one status:
 - `withdrawn_after_incident`: live evidence invalidated the prior claim; artifact retained for diagnosis only.
 
 Record remaining risks, exact evidence layers, independent reviewer, artifact/commit identity, rollback, and the next gate. Never use “tests passed” as a standalone production-readiness conclusion.
+
+The candidate remains `blocked` when an inventory item is unknown, a superseded path or alternate writer can still create accepted state, a retained adapter is not proven read-only, or disconnecting the canonical authority does not make every real entry fail closed.
