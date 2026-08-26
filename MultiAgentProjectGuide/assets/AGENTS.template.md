@@ -18,6 +18,8 @@ Replace bracketed fields with the project's stable contract. Remove sections tha
 - Inspect branch, HEAD, upstream, dirty, staged, and untracked state.
 - Claim owned files before writing and use one writer for overlapping files or environments.
 - Bind review and tests to a fixed commit, patch, artifact, or explicit dirty baseline.
+- Treat reviewer read-only scope as a ban on unapproved implementation/runtime mutation, not as a ban on review documentation.
+- Every assigned review must produce a structured findings or no-findings return in the named collaboration record/channel; if the reviewer cannot write that record, return it to the designated owner for persistence and acknowledgment.
 - Preserve unrelated user and agent changes.
 
 ## Diagnosis and evidence

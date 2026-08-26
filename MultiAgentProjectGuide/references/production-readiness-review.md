@@ -136,6 +136,8 @@ The independent reviewer must receive the raw diff, tests, proof-obligation matr
 - report whether removing production wiring or breaking an exit path would make a test fail.
 - reject skipped tests, expected failures, broad exception wrappers, or mocks that let a broken bypass/disconnect scenario appear green.
 
+Read-only review limits production, implementation, artifact, and runtime mutation; it does not permit a silent return. The reviewer must persist or hand off a structured findings or no-findings result through the named review channel. A no-findings result still identifies the reviewed artifact, matrix coverage, commands or inspections, failed attempts, unknowns, external-state status, and next gate. Implementing a fix requires an explicit role and scope transition before any write.
+
 Self-review and a second model reviewing only prose are not independent verification.
 
 ## 10. Use a bounded live acceptance gate

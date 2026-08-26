@@ -47,6 +47,7 @@
 - Forbidden actions: <exact actions>
 - Expected output: <commit / patch / findings / report / artifact>
 - Acceptance method: <tests / review / UI path / user acceptance>
+- Review output path/channel and record owner: <not applicable or exact destination and owner>
 - Superseded contracts/paths and allowed adapters: <none or exact list>
 - Required negative/anti-bypass evidence: <none or exact proof>
 - Stop condition: <where the agent must pause>
@@ -121,6 +122,7 @@
 - Inferences/hypotheses:
 - Unknown/unverified:
 - Findings opened/updated/closed:
+- Review return persisted or acknowledged: <record path / recipient / evidence / not applicable>
 - External state changed or deliberately unchanged:
 - Authorization relied upon:
 - Decisions and risks:
