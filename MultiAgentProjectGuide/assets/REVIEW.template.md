@@ -8,6 +8,9 @@
 - Branch / HEAD / upstream: <branch / sha / upstream>
 - Dirty, staged, and untracked state: <clean or exact files>
 - Objective: <one observable outcome>
+- Interaction record path and writer: <path / agent or role>
+- Error Ledger path and writer: <none or path / agent or role>
+- Current related ERROR-IDs: <none or IDs>
 - Active roles and claims: <CLAIM IDs>
 - Verified evidence: <evidence layer and exact result>
 - Failed attempts: <summary or none>
@@ -48,6 +51,8 @@
 - Expected output: <commit / patch / findings / report / artifact>
 - Acceptance method: <tests / review / UI path / user acceptance>
 - Review output path/channel and record owner: <not applicable or exact destination and owner>
+- Discussion-persistence trigger and interaction-record owner: <exact rule and owner>
+- Error Ledger path/ownership and related ERROR-IDs: <none or exact path/owner/IDs>
 - Superseded contracts/paths and allowed adapters: <none or exact list>
 - Required negative/anti-bypass evidence: <none or exact proof>
 - Stop condition: <where the agent must pause>
@@ -122,6 +127,8 @@
 - Inferences/hypotheses:
 - Unknown/unverified:
 - Findings opened/updated/closed:
+- Development-guiding discussion captured: <record reference / none>
+- Error Ledger events appended or proposed: <ERROR-ID/EVENT-ID / none>
 - Review return persisted or acknowledged: <record path / recipient / evidence / not applicable>
 - External state changed or deliberately unchanged:
 - Authorization relied upon:

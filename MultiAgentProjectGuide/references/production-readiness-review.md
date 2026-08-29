@@ -16,6 +16,7 @@ Before implementing another fix:
    - the missing or incorrect production path/state transition;
    - why the previous tests and review did not detect it.
 5. Turn the live counterexample into a failing contract test before modifying the implementation whenever reproduction is safe.
+6. Register or link the production incident in the private Error Ledger when cross-round tracking is needed. Carry its stable `ERROR-ID` through the proof matrix, remediation, independent review, and release decision without replacing the canonical `REVIEW.md` finding or gate.
 
 ## 2. Build a proof-obligation matrix
 
@@ -157,6 +158,6 @@ End the review with one status:
 - `live_accepted`: the named isolated live gate passed for the exact artifact;
 - `withdrawn_after_incident`: live evidence invalidated the prior claim; artifact retained for diagnosis only.
 
-Record remaining risks, exact evidence layers, independent reviewer, artifact/commit identity, rollback, and the next gate. Never use “tests passed” as a standalone production-readiness conclusion.
+Record remaining risks, related `ERROR-ID` values, exact evidence layers, independent reviewer, artifact/commit identity, rollback, and the next gate. Never use “tests passed” as a standalone production-readiness conclusion.
 
 The candidate remains `blocked` when an inventory item is unknown, a superseded path or alternate writer can still create accepted state, a retained adapter is not proven read-only, or disconnecting the canonical authority does not make every real entry fail closed.

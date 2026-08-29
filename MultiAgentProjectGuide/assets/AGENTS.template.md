@@ -20,6 +20,8 @@ Replace bracketed fields with the project's stable contract. Remove sections tha
 - Bind review and tests to a fixed commit, patch, artifact, or explicit dirty baseline.
 - Treat reviewer read-only scope as a ban on unapproved implementation/runtime mutation, not as a ban on review documentation.
 - Every assigned review must produce a structured findings or no-findings return in the named collaboration record/channel; if the reviewer cannot write that record, return it to the designated owner for persistence and acknowledgment.
+- Persist discussion that guides current development, including requirements, constraints, alternatives, risks, hypotheses, proposed decisions, open questions, next work, and gate effects. Treat user wording such as “for discussion” as an explicit interaction-record write trigger.
+- Use one private append-only Error Ledger for cross-round blockers, recurrence, invalid evidence, safety/privacy boundary events, and production incidents. Keep current authority in `REVIEW.md`, full output in evidence, and substantive changes in the development log.
 - Preserve unrelated user and agent changes.
 
 ## Diagnosis and evidence
