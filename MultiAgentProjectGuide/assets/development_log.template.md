@@ -48,3 +48,5 @@ Append entries in the project's established chronological order. Do not rewrite 
   - <items or none>
 - Related REVIEW records:
   - <CLAIM / FINDING / GATE / DECISION IDs>
+- Related Error Ledger records:
+  - <ERROR-ID / EVENT-ID / none>

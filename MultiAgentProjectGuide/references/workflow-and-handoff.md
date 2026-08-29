@@ -48,6 +48,12 @@ Before writing, create or update a claim with:
 
 Do not begin overlapping writes when another claim owns the same object. Coordinate, become read-only, or isolate the work and designate one integrator.
 
+## Discussion-to-record default
+
+When a discussion affects current development direction, persist it during the same turn. Capture requirements, constraints, alternatives, risks, hypotheses, proposed decisions, unresolved questions, required follow-up, and gate implications. User wording such as “for discussion” or “供讨论” is an explicit instruction to update the interaction record, not merely to keep the content in chat.
+
+Recording does not imply acceptance or implementation authority. Label proposals, decisions, questions, hypotheses, and unknowns accurately. If the agent cannot write the record, send an append-ready structured block to the named record owner and require acknowledgment; do not call the handoff complete while the guidance exists only in chat.
+
 ## Evidence-led diagnosis
 
 For recurring, production, or unclear failures, use:
@@ -64,6 +70,8 @@ Classify the conclusion:
 - `unknown`: current evidence cannot decide.
 
 Inspect logs, real entrypoints, persisted state, state transitions, and runtime behavior before modifying code. “The code appears to do this” is code evidence, not runtime reachability.
+
+Register or link an Error Ledger event when the failure blocks a gate, invalidates the run's evidence, crosses a safety/privacy/durable-state boundary, becomes a production incident, recurs, or requires a cross-round disposition/prevention check. Carry the stable `ERROR-ID` through diagnosis, finding disposition, checkpoints, and handoff. Do not classify a run as `PRODUCT_FAIL` before the product contract node was actually reached.
 
 ## Contract replacement and migration
 
@@ -134,6 +142,8 @@ Record owner, time, reason, and verification evidence. Another model's finding i
 - Forbidden actions:
 - Existing evidence:
 - Review output path/channel and record owner:
+- Interaction record path/owner and discussion-persistence trigger:
+- Related ERROR-IDs:
 - Superseded/legacy paths in scope:
 - Anti-bypass evidence required:
 - Questions to answer:
@@ -158,11 +168,14 @@ Record owner, time, reason, and verification evidence. Another model's finding i
 - Remaining bypass/legacy paths:
 - Anti-bypass/disconnect results:
 - Findings/decisions:
+- Development-guiding discussion captured and record reference:
+- Related ERROR-IDs and events appended/proposed:
 - Failed attempts:
 - Unknown/unverified:
 - Base drift observed:
 - External state changed or unchanged:
 - Review record written, or handoff recipient and acknowledgment:
+- Interaction/error record written, or handoff recipient and acknowledgment:
 - Handoff/next gate:
 ```
 
@@ -191,6 +204,7 @@ Create a snapshot at a milestone, model/task switch, archive boundary, or before
 - Confirmed facts:
 - Inferences/hypotheses:
 - Unknown/unverified:
+- Related ERROR-IDs:
 - Open findings/blockers:
 - External state:
 - Evidence paths:
@@ -217,6 +231,8 @@ Maintain one canonical Skill package. A runtime adapter changes only how that pa
 - TRAE: install the complete canonical package into the project's Agent Skills location with `scripts/install-trae-project-skill.ps1`, reload TRAE, and verify discovery in its Skills settings. Use project Rules only as a bootstrap to load this canonical package.
 - Deep Code: when supported by the installed runtime, use its Agent Skills locations such as a user `~/.agents/skills/<name>/SKILL.md` or project `.deepcode/skills/<name>/SKILL.md`; verify the current runtime rather than assuming paths from prose.
 - DeepSeek chat/API or another runtime without a verified native Skill mechanism: provide the sanitized canonical package or its relevant rules through the runtime's supported project-rule, system-prompt, or file-context mechanism. State that this is an adapter, verify that the agent actually loaded it, and never assume access to local records or credentials.
+
+For TRAE, DeepSeek, and every adapter, the bootstrap must name the interaction record and its writer, state the discussion-persistence trigger, and require a file diff or owner acknowledgment after guiding discussion or review. A chat-only review/discussion return is incomplete even when the model lacks direct filesystem write access.
 
 For every runtime, hand off the same base, role/scope, authority, evidence, sensitive-data boundary, return schema, and stop condition.
 
@@ -249,4 +265,4 @@ CI status is exactly one of `passed`, `failed`, `queued`, `in_progress`, `cancel
 
 For release/deployment, identify source commit, artifact/hash, configuration source, target, privacy result, rollback artifact/command, and acceptance signal. Report deployment state separately as `uploaded`, `started`, `healthy`, `functionally_tested`, and `user_accepted`.
 
-A complete handoff includes changed and unchanged state, baseline/current identity, dirty state, role/scope, exact actions/results, failures, evidence levels, findings/dispositions, unknowns, external state, authorization, rollback, next owner/action, pass criterion, and stop condition.
+A complete handoff includes changed and unchanged state, baseline/current identity, dirty state, role/scope, exact actions/results, failures, evidence levels, findings/dispositions, related ERROR-IDs, development-guiding discussion and its record reference, unknowns, external state, authorization, rollback, next owner/action, pass criterion, and stop condition.

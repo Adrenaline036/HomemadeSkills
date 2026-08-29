@@ -1,6 +1,6 @@
 ---
 name: guide-multi-agent-project
-description: Coordinate multi-agent or resumed project work through scoped authority, single-writer ownership, durable records, fixed baselines, evidence layers, review disposition, and resumable handoffs. Use when multiple agents may touch one project; when REVIEW.md, development_log.md, or develop_log.md is present; or when work spans review, CI, release, deployment, durable/live data, or production recovery. Do not use for an ordinary single-agent edit that needs no shared state or external gate.
+description: Coordinate multi-agent or resumed project work through scoped authority, single-writer ownership, durable records, fixed baselines, evidence layers, review disposition, error ledgers, and resumable handoffs. Use when multiple agents may touch one project; when REVIEW.md, error_ledger.md, development_log.md, or develop_log.md is present; or when work spans review, CI, release, deployment, durable/live data, or production recovery. Do not use for an ordinary single-agent edit that needs no shared state or external gate.
 ---
 
 # Guide Multi-Agent Project
@@ -29,6 +29,8 @@ Before writing:
 ## Records and evidence
 
 - Keep stable cross-task rules in `AGENTS.md`; current coordination, authority, claims, findings, gates, and handoff in `REVIEW.md`; substantive implementation or operational changes in the project's existing `development_log.md` or `develop_log.md`; raw outputs in an evidence directory; and durable architecture decisions in ADRs.
+- Persist development-guiding discussion in the interaction record during the same turn. This includes requirements, constraints, alternatives, risks, hypotheses, candidate decisions, unresolved questions, next work, or gate implications, and any content the user marks “for discussion” or equivalent. Record its status accurately; discussion is not automatic acceptance or implementation authority.
+- When a cross-round blocker, recurrence, invalid evidence run, safety/privacy boundary event, or production incident needs durable tracking, use one private append-only `error_ledger.md` as an index. It never replaces `REVIEW.md`, raw evidence, the per-run failure ledger, or the development log.
 - Do not create both development-log filenames. Preserve the project's established authority and history.
 - Rewrite only `REVIEW.md` current state; preserve claims, findings, dispositions, decisions, gates, and session history. Never silently delete a finding or another agent's record.
 - Separate confirmed facts, strong inferences, hypotheses, unknowns, failed attempts, and unverified items.
@@ -41,6 +43,7 @@ Use a pausable flow: intake → preflight → claim → diagnosis → implementa
 
 - For document responsibilities, naming compatibility, privacy, archiving, evidence/ADR placement, or when creating/auditing collaboration files, read [references/collaboration-records.md](references/collaboration-records.md). Copy the unique templates from `assets/`; do not maintain divergent copies in project prose.
 - For multi-stage work, uncertain diagnosis, cross-agent requests/returns, independent review, findings, context snapshots, runtime adapters, or checkpoints, read [references/workflow-and-handoff.md](references/workflow-and-handoff.md).
+- For cross-round blocking errors, recurrence, invalid evidence, safety/privacy boundary events, production incidents, or Error Ledger creation/validation, read [references/error-ledger.md](references/error-ledger.md).
 - Before durable/live mutation, production-entry or recovery-state changes, replacing an authority, contract, or execution path, deployment claims, or after live evidence invalidates a candidate, read [references/production-readiness-review.md](references/production-readiness-review.md).
 
 Diagnose uncertain or recurring failures before fixing. Make the smallest coherent change within the claim, verify focused behavior before broader layers, disposition every finding with evidence, and pause at the named gate.
