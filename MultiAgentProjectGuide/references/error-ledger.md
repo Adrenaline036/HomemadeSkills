@@ -4,15 +4,16 @@ Use an Error Ledger only when a project needs a cross-round index of blocking er
 
 ## Authority and boundaries
 
-The ledger is append-only history, not a second project dashboard:
+The ledger is append-only error history, not a permission grant or general project dashboard:
 
-- `REVIEW.md` or its equivalent owns current authorization, claims, findings, canonical dispositions, gates, and handoff.
-- `error_ledger.md` links blocking symptoms, diagnoses, containment, remediation, verification, recurrence, and prevention across rounds.
-- the development log records substantive code, test, configuration, build, release, deployment, rollback, and operational changes;
-- a run-local failure ledger retains failed commands and tool errors from that run;
-- evidence stores complete outputs, screenshots, manifests, and captures.
+- `AGENTS.md`, the current user/task authorization, and any established authority record govern scope and permission;
+- optional `REVIEW.md` owns unresolved authorization, ownership, finding/disposition, decision, or external-gate state only when project rules require it or no adequate authority record exists;
+- `error_ledger.md` links qualifying blocking symptoms, diagnoses, containment, remediation, verification, recurrence, and prevention across rounds;
+- the development log records substantive implementation, test, configuration, build, artifact, release, deployment, rollback, and operational changes;
+- run evidence stores exact outputs, manifests, privacy results, structured reviews, and fix-loop results; and
+- a run-local failure ledger retains failed commands and tool errors from that run.
 
-If the ledger and `REVIEW.md` disagree on a disposition or gate, stop and ask the coordinator to resolve the authority conflict. Never let a validator choose.
+The v1 schema retains the headers `Canonical REVIEW record` and `REVIEW reference` for compatibility. When REVIEW is not required, fill them with `none` plus the actual adequate authority/evidence reference; do not create REVIEW merely to satisfy a field label. If the ledger conflicts with the current authority record on disposition or gate, stop for coordinator resolution. Never let a validator choose authority.
 
 ## Activation and classification
 
@@ -48,12 +49,12 @@ Only these canonical dispositions are valid: `fixed`, `accepted-risk`, `deferred
 ## Ownership and multi-agent returns
 
 - Claim one writer/integrator for the ledger before writing.
-- A reviewer is read-only unless the review request explicitly grants append authority. Without it, return a complete append-ready event to the record owner and require acknowledgment.
-- A reviewer never rewrites an old event or the coordinator-owned dashboard.
+- A reviewer is implementation-read-only and ledger-read-only unless the review request explicitly grants append authority. Without it, return a complete append-ready event to the record owner and require acknowledgment in the named channel.
+- Store routine review findings/no-findings in run evidence. A reviewer never rewrites an old ledger event or coordinator-owned authority state.
 - Changing from reviewer to implementer requires a new role/scope claim and ends independent-review status for that round.
 - Resolve concurrent event conflicts by preserving both inputs and appending a conflict/resolution event; never delete one side.
 
-Every checkpoint and handoff carries the fixed baseline, related `ERROR-ID`, minimum evidence, unknowns, external state, next owner/action, pass criterion, and stop condition.
+Routine checkpoints reference the related `ERROR-ID` in run evidence. Every actual transfer creates a new immutable handoff document carrying the fixed baseline, related `ERROR-ID`, minimum evidence, unknowns, external state, next owner/action, pass criterion, and stop condition.
 
 ## Privacy
 
@@ -69,7 +70,7 @@ Run:
 python -X utf8 scripts/validate_error_ledger.py <ledger> --repo-root <project-root>
 ```
 
-Add `--previous <prior-ledger>` to prove historical events were not deleted or edited. Add `--review <REVIEW.md>` to check that canonical dispositions are represented consistently in the current collaboration record.
+Add `--previous <prior-ledger>` to prove historical events were not deleted or edited. Add `--review <REVIEW.md>` only when that REVIEW file is an applicable authority record and disposition consistency must be checked.
 
 Projects may extend the source category vocabulary by repeating `--allow-category <NAME>` while retaining the same separate blocking, priority, confidence, and run-classification fields.
 

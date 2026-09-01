@@ -3,10 +3,10 @@
 - Schema: multi-agent-error-ledger/v1
 - Project: <project identifier>
 - Private boundary: <ignored private path or policy>
-- Canonical REVIEW record: <relative path>
+- Canonical REVIEW record: <relative path, or none with the adequate authority source>
 - Ledger writer: <agent or role>
 
-Copy this template to the project's declared private path. Append events; never rewrite an existing event.
+Copy this template only when cross-round tracking applies and only to the project's declared private path. Append events; never rewrite an existing event. The v1 compatibility labels `Canonical REVIEW record` and `REVIEW reference` do not require creation of REVIEW: when REVIEW is not applicable, fill them with `none` plus the actual authority/evidence reference. Keep every field name unchanged for validator compatibility.
 
 ## ERR-YYYYMMDD-NNN
 
@@ -28,7 +28,7 @@ Copy this template to the project's declared private path. Append events; never 
 - Verification actually run: <command or UI path / not yet>
 - Exact result: <result / not yet>
 - Evidence reference / evidence layer: <private relative reference / layer>
-- REVIEW reference: <claim/finding/decision/gate ID>
+- REVIEW reference: <claim/finding/decision/gate ID, or none plus authority/evidence reference>
 - Recurrence links: <none / ERROR-IDs / external-history marker>
 - Unknown / unverified: <items or none>
 - Canonical disposition: <none / fixed / accepted-risk / deferred / not-reproducible / disagreed>
@@ -56,7 +56,7 @@ Copy this template to the project's declared private path. Append events; never 
 - Verification actually run: <exact command or UI path>
 - Exact result: <exact result>
 - Evidence reference / evidence layer: <private relative reference / layer>
-- REVIEW reference: <claim/finding/decision/gate ID>
+- REVIEW reference: <claim/finding/decision/gate ID, or none plus authority/evidence reference>
 - Recurrence links: <none / ERROR-IDs / external-history marker>
 - Unknown / unverified: <historical unknown preserved and current unknowns>
 - Canonical disposition: <none / fixed / accepted-risk / deferred / not-reproducible / disagreed>
