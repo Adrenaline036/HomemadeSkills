@@ -1,106 +1,104 @@
 # Collaboration records
 
-Read this reference when creating, revising, explaining, archiving, or auditing project collaboration files. Templates have one canonical copy under `assets/`; this reference defines when and how to use them without duplicating their full text.
+Read this reference before bootstrapping, creating, revising, explaining, or auditing project collaboration files. Templates have one canonical copy under `assets/`; never duplicate their full schemas in project prose.
 
-## Document responsibility matrix
+## Responsibility matrix
 
-| Layer | Default location | Sole responsibility | Keep out |
+| Layer | Default route | Sole responsibility | Keep out |
 |---|---|---|---|
-| Stable project rules | `AGENTS.md` or runtime Rules | Cross-task environment, entrypoints, invariants, safety, and collaboration contract | Current task status, long logs, temporary decisions |
-| Current collaboration | `local/development/REVIEW.md` | Current state, authorization, claims, decisions, questions, findings, gates, and handoff | Full chats, bulk raw output, secrets |
-| Cross-round error index | Optional `local/development/error_ledger.md` | Blocking errors, recurrence links, diagnosis/remediation/verification events, and prevention evidence | New authority, a second finding system, complete logs |
-| Substantive changes | Existing `local/development/development_log.md` or `develop_log.md` | Code, configuration, schema, test, build, artifact, release, deployment, rollback, and operational changes | Planning, review-only work, unchanged diagnostics |
-| Per-run failures | Existing run-scoped `failure_ledger.md` or equivalent | Append-only raw failed commands, tool errors, and run-local invalid evidence | Cross-round current state or long-term disposition |
-| Raw evidence | `local/development/evidence/` or project equivalent | Full test output, screenshots, manifests, diagnostic captures | Material every agent must load by default |
-| Durable decisions | `docs/decisions/ADR-*.md` or project equivalent | Long-lived architecture choice, alternatives, reasons, costs, and revisit condition | Immediate task state and routine implementation detail |
+| Stable project rules | `AGENTS.md` or runtime Rules | Cross-task environment, entrypoints, invariants, safety, automation eligibility, and record routes | Current status, long logs, temporary decisions |
+| Conditional control plane | Optional `REVIEW.md` or established equivalent | Unresolved authorization, ownership, finding/disposition, decision, or external-gate state without another adequate authority record | Routine progress, ordinary discussion, default review returns, full chats |
+| Substantive changes | Exactly one existing `development_log.md` or `develop_log.md` | Implementation, configuration, schema, test, build, artifact, release, deployment, rollback, and operational changes | Planning, review-only work, unchanged diagnostics |
+| Cross-round error index | Conditional private `error_ledger.md` | Blocking errors, recurrence, invalid evidence, privacy/safety/durable-state events, and production incidents | Permission grants, complete logs, routine failures |
+| Run evidence | Project evidence location, with one automation run directory per run | Exact commands/results, sanitized outputs, manifests, reviewed diff identity, structured review returns, and fix-loop dispositions | Secrets and unrelated private data |
+| Actual handoffs | Project-defined private `handoffs/` route | One immutable standalone progress document per responsibility/context transfer or resumable pause | Reused mutable dashboard, chat transcript, or transient reviewer call |
+| Per-run failures | Existing run-local `failure_ledger.md` or equivalent | Raw failed commands, tool errors, and run-local invalid evidence | Cross-round disposition or current authority |
+| Durable decisions | `docs/decisions/ADR-*.md` or project equivalent | Long-lived architecture choice, alternatives, costs, and revisit condition | Routine implementation detail |
 
-These are default locations, not permission grants. Check repository policy, `.gitignore`, and publication intent before creating or writing them.
+Locations are not permission grants. Check repository policy, existing names, `.gitignore`, publication intent, and the authorized write scope before creating or writing them.
 
-## File-name compatibility
+## Idempotent bootstrap
 
-- Prefer the development-log filename already used by the project.
-- Do not create both `development_log.md` and `develop_log.md` for the same purpose.
-- If both exist, identify the authoritative record from project policy and history before writing; keep the other read-only until the user or repository contract resolves it.
-- Do not rename or migrate history merely for consistency without authorization.
+Bootstrap records only when a project needs them and the write scope permits it:
+
+1. Inventory existing `AGENTS.md`/Rules, both development-log names, Error Ledger, evidence locations, handoff routes, REVIEW/equivalent authority records, ADR policy, and ignore rules. Consult repository history or project rules before deciding which established name is canonical.
+2. Preserve every established file and route. Never initialize over an existing file, rename history for consistency, or create a second approximate template.
+3. Keep exactly one development log. If one accepted filename exists, retain it. If neither exists, copy [the development-log template](../assets/development_log.template.md) once using the project's convention. If both exist and authority is unclear, create neither, keep both read-only, and stop for a naming decision.
+4. Retain or create one evidence location and one project-defined private handoffs directory. Verify the intended privacy boundary with project policy and `git check-ignore`; a directory name alone does not prove privacy.
+5. Create the private append-only Error Ledger from [its template](../assets/error_ledger.template.md) only when a cross-round trigger applies. Do not create it for every project.
+6. Create REVIEW from [its template](../assets/REVIEW.template.md) only when explicitly requested, required by existing rules, or needed as the missing control plane for unresolved authorization, ownership, finding/disposition, decision, or an external gate.
+7. Keep stable routes and invariants in the existing AGENTS/Rules. If none exists and authorization covers creation, copy [the AGENTS template](../assets/AGENTS.template.md) once and adapt it without current task state.
+
+Repeating bootstrap must leave established files unchanged. Only a new run creates a new run-evidence directory, and only an actual transfer creates a new handoff file.
 
 ## AGENTS.md rules
 
-Copy [the AGENTS template](../assets/AGENTS.template.md) when a project lacks a suitable stable contract, then adapt it to the actual repository.
+Include only stable rules that affect future decisions:
 
-Include only cross-task rules that affect future decisions:
-
-- operating system, shell, repository boundary, and real entrypoints;
-- build, focused-test, full-regression, and real acceptance paths;
-- stable architecture, data, and compatibility invariants;
-- collaboration-file locations and ownership rules;
-- dirty-worktree and durable-data protections;
+- operating system, shell, repository boundary, real entrypoints, and exact test routes;
+- automation eligibility/fallback policy and the local-uncommitted candidate ceiling;
+- architecture, data, compatibility, supersession, and production invariants;
+- the single development log, evidence, conditional Error Ledger, optional authority record, and private handoff routes;
+- dirty-worktree, privacy, secret, live/durable-data, and unrelated-work protections; and
 - operations requiring separate authorization.
 
-Exclude single-bug analysis, complete test output, completed-task requirements, changing current state, duplicated generic advice, and model-specific trivia. Prefer revising an existing rule over appending a synonym. Codex, TRAE, and other runtime Rules should express one contract rather than fork it.
+Exclude single-bug analysis, complete test output, current task status, temporary decisions, repeated review returns, and model-specific credentials. Prefer revising an existing stable rule over appending a synonym. Runtime Rules should express the same contract rather than fork it.
 
-## REVIEW.md rules
+## Optional REVIEW control plane
 
-Copy [the REVIEW template](../assets/REVIEW.template.md) when creating a collaboration record.
+REVIEW is not the default destination for ordinary discussion, reviewer returns, checkpoints, routine progress, or handoffs. When its trigger applies:
 
-- The current coordinator is the sole writer for `Current state`; rewrite that section as a compact dashboard of now.
-- Preserve and append authorization, claims, decisions, questions, findings, gates, dispositions, and session history.
-- Update after role or scope change, checkpoint, material failure, review return, finding disposition, external-state change, or handoff. An incidental unchanged read-only check does not need another history entry, but every assigned review requires a durable structured return even when it finds no issues.
-- Read-only review forbids unapproved implementation/runtime mutation; it does not forbid collaboration output. A reviewer with explicit append authority records its claim, findings, gate evidence, or session without rewriting `Current state`. Otherwise it returns the same structured material to the coordinator/integrator who owns the file, and that owner persists it.
-- Name the review output path/channel and record owner in the request. A review is not complete until its return is written to the authorized record or acknowledged through the named handoff channel.
-- A claim names agent/runtime/role, base, owned/read-only scope, allowed and forbidden actions, output, acceptance, stop condition, and status.
-- A finding remains intact. Its implementer may mark `fixed`, `accepted-risk`, `deferred`, `not-reproducible`, or `disagreed`, but must provide owner, time, and evidence. Close only after verification or explicit risk acceptance.
-- Keep `proposal`, `accepted`, `rejected`, and `superseded` decisions distinct. Track open questions by the evidence needed and which gate they block.
-- Preserve failed attempts, unknown/unverified items, external state, rollback, and the next gate. Do not report a final green run while hiding prior failures or flakiness.
+- name its exact scope and writer; one coordinator owns mutable current state;
+- preserve authorization, claims, decisions, findings, dispositions, and gates already in the record;
+- write only the unresolved control-plane state that lacks an adequate authority home, plus evidence references needed to adjudicate it;
+- keep proposals, accepted decisions, rejected decisions, and superseded decisions distinct;
+- keep findings intact and disposition them as `fixed`, `accepted-risk`, `deferred`, `not-reproducible`, or `disagreed` with owner, time, reason, and evidence; and
+- link rather than copy run evidence, development-log entries, Error Ledger events, and immutable handoff files.
 
-## Discussion persistence rules
+A pre-existing project rule may require REVIEW updates; obey that exact rule. Otherwise a structured review remains in run evidence, and an actual transfer creates a separate handoff document.
 
-- Default to writing the interaction record when discussion guides the current development: requirements, constraints, alternatives, risks, hypotheses, proposed decisions, open questions, next work, acceptance criteria, or gate effects.
-- Treat “for discussion”, “供讨论”, “讨论用”, and equivalent user wording as an explicit persistence trigger. Do not wait for a second instruction to write it down.
-- Preserve epistemic and decision status: use proposed, accepted, rejected, question, hypothesis, or unknown as appropriate. Recording discussion does not authorize implementation or turn a proposal into a decision.
-- If the active agent owns the record, update it in the same turn. Otherwise return a structured record block to the named owner and require persistence acknowledgment before calling the discussion handoff complete.
-- Do not transcribe the full chat. Capture the guidance, evidence boundary, owner, affected gate, unresolved points, and next action.
+## Ordinary discussion and progress
 
-## Error Ledger rules
+Content marked “for discussion”, “供讨论”, or equivalent does not by itself force REVIEW or another repository write. Keep ordinary discussion and routine progress in the active interaction or run evidence.
 
-Read [the Error Ledger reference](error-ledger.md) before creating, updating, migrating, or validating a ledger. Copy [the unique template](../assets/error_ledger.template.md); do not create a second approximate schema.
+Persist only when the content reaches a durable route:
 
-- `REVIEW.md` remains authoritative for current state, authorization, findings, dispositions, and gates. The ledger indexes cross-round error events and links back to those records.
-- Use one designated writer/integrator. Other agents return append-ready events unless their claim explicitly grants ledger append authority.
-- Append new diagnosis, containment, remediation, verification, recurrence, and disposition events. Never rewrite an old unknown into a historical confirmation.
-- Keep full output in evidence and run-local failures in the failure ledger. The Error Ledger stores sanitized summaries and stable references only.
-- Creating or closing an error event grants no code, Git, release, deployment, external-system, or durable-data permission.
+- a substantive implementation/configuration/schema/test/build/artifact/release/deployment/rollback/operational change -> development log;
+- a qualifying blocker, recurrence, invalid harness/provider run, privacy/safety/durable-state event, or production incident -> Error Ledger;
+- an unresolved authorization, ownership, finding/disposition, decision, or external gate without adequate authority -> REVIEW/equivalent control plane; or
+- an actual transfer or resumable pause -> a new immutable handoff file.
 
-Priority convention:
+Recording a proposal never turns it into authorization or acceptance. Do not transcribe the full chat into any record.
 
-- P0: active data loss, secret exposure, security compromise, or production outage.
-- P1: blocks required behavior or release.
-- P2: material correctness, reliability, operability, or maintainability issue.
-- P3: valuable non-blocking improvement.
+## Development log
 
-## Development-log rules
+Append only substantive changes to the project's established development-log file. Tie an entry to the fixed baseline, requirement/finding, observable change, exact validation, evidence path, external state, rollback, remaining risk, and applicable authority or ERROR-IDs. For path or contract replacement, also record superseded producers/consumers, retained read-only adapters, unknown count, and negative/disconnect evidence.
 
-Copy [the development-log template](../assets/development_log.template.md) only when the project has no authoritative equivalent.
+Do not log plans, ordinary discussion, read-only inspection, unchanged diagnosis, routine progress, review-only work, or bulk raw output. A reviewer return is referenced only when it materially affects the implemented candidate.
 
-Record substantive changes to code behavior, configuration or environment contract, schema/database/migration, tests, build/artifact, release/deployment/rollback, or operations. Tie each entry to the requirement or finding, baseline, validation, evidence path, external state, rollback, remaining risks, and related `REVIEW.md` IDs. For contract/path replacement, also record the superseded paths, retained compatibility adapters, producer/consumer inventory status, and negative or disconnect evidence that blocks bypass.
+## Error Ledger
 
-Do not log complete chats, plans, ordinary discussion, read-only inspection, unchanged diagnosis, review-only work, ordinary formatting/documentation, temporary coordination already in `REVIEW.md`, or bulk raw logs. Put raw output in the evidence directory and link it.
+Read [the Error Ledger reference](error-ledger.md) before creation, migration, append, or validation. Use its unique template and preserve the v1 validator schema.
 
-## Evidence and ADRs
+- One writer appends events; reviewers return append-ready events unless separately authorized to append.
+- Keep exact output in evidence and run-local failures in the run failure ledger.
+- The ledger grants no code, Git, release, deployment, external-system, or durable-data permission.
+- When REVIEW is absent, use the schema's REVIEW fields to state that it is not required and identify the adequate authority/evidence reference; do not invent a REVIEW file merely to satisfy a label.
 
-For raw evidence, retain:
+## Evidence and reviews
 
-- commit/artifact and environment;
-- command or UI path, time, outcome, and exit code when available;
-- the first relevant error and only the necessary stack context in summaries;
-- a stable relative evidence path;
-- failed, flaky, cancelled, and timed-out attempts as well as success.
+For every meaningful test or review, retain fixed candidate identity, environment, exact command or inspection, time, outcome/exit code, failed or invalid attempts, privacy-screening result, and a stable relative evidence reference. Reviewers always return structured findings or no-findings to the named channel; the coordinator stores that return in run evidence by default.
 
-Use an ADR only for a durable architecture decision. Record context, confirmed facts, alternatives, choice and rationale, consequences/risks, and revisit condition. Do not elevate every temporary implementation detail.
+Evidence must distinguish proposal, code, static, focused test, real local entrypoint, container, remote live, and user acceptance. An ignored evidence path is private only after policy/ignore verification and is never automatically visible across devices.
+
+## Actual handoffs
+
+Read [the workflow and handoff reference](workflow-and-handoff.md) and copy [the unique handoff template](../assets/handoff.template.md). Every responsibility/context transfer to another agent, model, device, or conversation, or pause intentionally meant for another context, creates a new unique timestamp/slug file under the declared private handoffs directory. A transient reviewer/model request and return inside one coordinator-owned run is run evidence, not a handoff. Never update an earlier handoff as a dashboard.
+
+The handoff summarizes and links current evidence; it does not replace the development log, Error Ledger, optional authority control plane, or raw evidence. A local ignored handoff is same-filesystem evidence only. Cross-device transfer requires separately authorized sanitized tracked material, a base-bound patch, an archive with manifest, or a pushed branch plus exact commit, and the handoff must say what the recipient can actually see.
 
 ## Privacy, sharing, and archiving
 
-- A `local/` path is not automatically ignored. Verify with `.gitignore`, `git check-ignore`, and the staged diff before publication.
-- Same-machine agents may share ignored files; cross-machine agents cannot be assumed to see them. Use a sanitized tracked handoff only with approval.
+- Verify ignored/private placement with `.gitignore`, `git check-ignore`, and the staged diff before publication. `local/` is not inherently private.
 - Never publish credentials, cookies, `.env` contents, databases, full production logs, private endpoints, deployment archives, browser state, media inventories, or personal data.
-- Archive after a major milestone, when history no longer affects current decisions, when the current record is hard to navigate, or when unrelated subprojects have accumulated.
-- After archiving, retain a current-state dashboard and archive index. Never archive away open findings, unresolved failures, required rollback data, or evidence still needed by an active gate.
+- Archive only after a milestone when history no longer affects active decisions. Never archive away unresolved authority, open blockers, required rollback data, or evidence still needed by a gate.

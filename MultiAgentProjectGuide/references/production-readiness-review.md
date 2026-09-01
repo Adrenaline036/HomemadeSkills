@@ -4,6 +4,8 @@ Use this review for changes that can mutate durable data, alter a production ent
 
 The objective is not to accumulate test counts. The objective is to prove that the shipped production path performs the intended behavior, preserves its invariants across failure, and always leaves the operator a safe exit.
 
+Automation may prepare and review an unstaged, uncommitted local candidate, but it must not cross a high-risk live checkpoint. Release, deployment, production access, durable mutation, and limited-live acceptance require their own authorization and an explicit manual gate.
+
 ## 1. Freeze the claim after an incident
 
 Before implementing another fix:
@@ -16,7 +18,7 @@ Before implementing another fix:
    - the missing or incorrect production path/state transition;
    - why the previous tests and review did not detect it.
 5. Turn the live counterexample into a failing contract test before modifying the implementation whenever reproduction is safe.
-6. Register or link the production incident in the private Error Ledger when cross-round tracking is needed. Carry its stable `ERROR-ID` through the proof matrix, remediation, independent review, and release decision without replacing the canonical `REVIEW.md` finding or gate.
+6. Register or link the production incident in the private Error Ledger when cross-round tracking is needed. Carry its stable `ERROR-ID` through the proof matrix, remediation, independent review, and release decision. Use REVIEW only when existing project rules require it or unresolved authorization, ownership, finding/disposition, decision, or external-gate state lacks another adequate authority record.
 
 ## 2. Build a proof-obligation matrix
 
@@ -137,7 +139,7 @@ The independent reviewer must receive the raw diff, tests, proof-obligation matr
 - report whether removing production wiring or breaking an exit path would make a test fail.
 - reject skipped tests, expected failures, broad exception wrappers, or mocks that let a broken bypass/disconnect scenario appear green.
 
-Read-only review limits production, implementation, artifact, and runtime mutation; it does not permit a silent return. The reviewer must persist or hand off a structured findings or no-findings result through the named review channel. A no-findings result still identifies the reviewed artifact, matrix coverage, commands or inspections, failed attempts, unknowns, external-state status, and next gate. Implementing a fix requires an explicit role and scope transition before any write.
+Read-only review limits production, implementation, artifact, and runtime mutation; it does not permit a silent return. The reviewer must return structured findings or no-findings through the named channel, and the coordinator stores the result in run evidence by default. A no-findings result still identifies the reviewed artifact, matrix coverage, commands or inspections, failed attempts, unknowns, privacy status, external-state status, and next gate. Implementing a fix remains the sole writer's work and requires explicit scope plus retesting; a reviewer that changes roles is no longer independent for that round.
 
 Self-review and a second model reviewing only prose are not independent verification.
 
@@ -158,6 +160,6 @@ End the review with one status:
 - `live_accepted`: the named isolated live gate passed for the exact artifact;
 - `withdrawn_after_incident`: live evidence invalidated the prior claim; artifact retained for diagnosis only.
 
-Record remaining risks, related `ERROR-ID` values, exact evidence layers, independent reviewer, artifact/commit identity, rollback, and the next gate. Never use “tests passed” as a standalone production-readiness conclusion.
+Record the status in run evidence and, when required, the adequate authority record. Include remaining risks, related `ERROR-ID` values, exact evidence layers, independent reviewer, artifact/commit identity, rollback, and the next gate. Never use “tests passed” as a standalone production-readiness conclusion. If responsibility or context transfers, summarize the final relevant review in a new immutable handoff document; do not turn REVIEW into the handoff by default.
 
 The candidate remains `blocked` when an inventory item is unknown, a superseded path or alternate writer can still create accepted state, a retained adapter is not proven read-only, or disconnecting the canonical authority does not make every real entry fail closed.
