@@ -44,6 +44,8 @@ Copy [the canonical template](../assets/error_ledger.template.md). Use stable `E
 
 Never edit or delete a historical event to improve the narrative. Preserve the evidence boundary that existed at the time. Later proof may append a verified prevention event, but it cannot retroactively clear an old `unknown`.
 
+Before appending, build the proposed event as a separate draft and validate that draft plus the prior ledger. Append only the exact validated block, then rerun the validator against the resulting ledger. This prevents a malformed event from corrupting the append-only canonical file. Derive enum values and required fields from the installed template/validator rather than memory. A validator failure leaves the canonical ledger unchanged and is recorded in run evidence.
+
 Only these canonical dispositions are valid: `fixed`, `accepted-risk`, `deferred`, `not-reproducible`, and `disagreed`. `fixed` requires verification against a fixed candidate. `accepted-risk` requires an authorized owner, time, reason, and scope. `deferred` names its owner, revisit condition, and blocked gate. `not-reproducible` is not `fixed`.
 
 ## Ownership and multi-agent returns
@@ -75,6 +77,8 @@ Add `--previous <prior-ledger>` to prove historical events were not deleted or e
 Projects may extend the source category vocabulary by repeating `--allow-category <NAME>` while retaining the same separate blocking, priority, confidence, and run-classification fields.
 
 The validator checks schema, IDs, event order, time zones, required fields, enums, fixed/accepted-risk evidence, recurrence links, append-only history, privacy patterns, private placement, and optional REVIEW consistency. It never edits the ledger. PASS proves structure and internal consistency only; it does not prove the product fixed, the gate passed, or any action was authorized.
+
+For provider-review incidents, keep the provider observation separate from the harness diagnosis. Record the request/response classification, model, finish reason, content/reasoning presence, sanitized usage, schema/LOAD ACK result, request ceiling, retry state, and evidence path. Do not label an empty response as a product failure or fixed review result. A harness correction may append `REMEDIATION`; append `VERIFIED` only after the relevant fixture or real-entrypoint prevention check passes at the declared evidence layer.
 
 ## Minimal migration
 

@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Governed multi-agent reviewer return",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["load_ack", "actual_review", "review_verdict", "blocking_findings", "nonblocking_findings", "proof_matrix_gaps", "external_state", "next_gate"],
+  "properties": {
+    "load_ack": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["runtime_model", "role", "rule_files", "reviewed_baseline", "claim", "checkpoint", "owned", "base_drift", "missing_files", "unknowns", "stop_condition"],
+      "properties": {
+        "runtime_model": {"enum": ["deepseek-v4-flash", "deepseek-v4-pro"]},
+        "role": {"const": "implementation-read-only-reviewer"},
+        "rule_files": {"type": "array", "minItems": 1, "items": {"type": "object", "additionalProperties": false, "required": ["path", "sha256"], "properties": {"path": {"type": "string", "minLength": 1}, "sha256": {"type": "string", "pattern": "^[0-9A-Fa-f]{64}$"}}}},
+        "reviewed_baseline": {"type": "object", "additionalProperties": false, "required": ["branch", "head", "dirty_status_sha256"], "properties": {"branch": {"type": "string", "minLength": 1}, "head": {"type": "string", "pattern": "^[0-9A-Fa-f]{40,64}$"}, "dirty_status_sha256": {"type": "string", "pattern": "^[0-9A-Fa-f]{64}$"}}},
+        "claim": {"type": "string", "minLength": 1},
+        "checkpoint": {"type": "string", "minLength": 1},
+        "owned": {"type": "array", "maxItems": 0},
+        "base_drift": {"type": "boolean"},
+        "missing_files": {"type": "array"},
+        "unknowns": {"type": "array"},
+        "stop_condition": {"type": "string", "minLength": 1}
+      }
+    },
+    "actual_review": {"type": "object", "additionalProperties": false, "required": ["files_read", "commands_run", "tests_run", "failures"], "properties": {"files_read": {"type": "array", "minItems": 1}, "commands_run": {"type": "array"}, "tests_run": {"type": "array"}, "failures": {"type": "array"}}},
+    "review_verdict": {"enum": ["PASS", "PASS_WITH_NONBLOCKING_FINDINGS", "FAIL_STOP"]},
+    "blocking_findings": {"type": "array"},
+    "nonblocking_findings": {"type": "array"},
+    "proof_matrix_gaps": {"type": "array"},
+    "external_state": {"type": "object", "additionalProperties": false, "required": ["changed", "notes"], "properties": {"changed": {"type": "boolean"}, "notes": {"type": "array"}}},
+    "next_gate": {"type": "object", "additionalProperties": false, "required": ["action", "stop_condition"], "properties": {"action": {"type": "string", "minLength": 1}, "stop_condition": {"type": "string", "minLength": 1}}}
+  }
+}

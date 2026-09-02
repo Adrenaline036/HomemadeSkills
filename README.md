@@ -16,6 +16,14 @@
 | [`FontsReader`](FontsReader/SKILL.md) | 只读审计动画 ASS/SSA 字幕并精确收集实际使用的字体，生成可二次加工的系列字体文件夹、清单和校验值 |
 | [`MultiAgentProjectGuide`](MultiAgentProjectGuide/SKILL.md) | 协调多智能体开发、审查、项目日志、GitHub、CI、部署和交接 |
 
+## MultiAgentProjectGuide 标准部署
+
+- Codex 用户级 Skill 安装在 `%USERPROFILE%\.codex\skills\guide-multi-agent-project`；需要项目内规则发现时，再将同一发布内容镜像到项目的 `.agents\skills\MultiAgentProjectGuide`。
+- DeepSeek MCP、MCP 配置和 API 凭据属于用户级运行时，不复制进项目或 Git 仓库。项目镜像只包含 Skill 的公开规则、模板和校验脚本。
+- Windows 适配器使用一个固定的 DPAPI 加密凭据容器作为唯一凭据来源；环境变量、`.env`、替代路径和旧 key 备份不作为回退。
+- 缓存命中以每次 Provider 原始响应中的 usage 字段为即时证据；平台 Usage/账单可能稍后刷新，最终费用以同一 API key、UTC 时间段的导出账单对账。
+- 本机 MCP 与各项目 Skill 镜像是两个层次：更新 Skill 不会复制、读取或公开 API key；更新 MCP/凭据也不会自动修改项目代码。
+
 ## TRAE 安装
 
 TRAE 可直接导入 Open Agent Skills 格式：

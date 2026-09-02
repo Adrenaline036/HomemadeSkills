@@ -28,7 +28,7 @@ local_candidate_gate
   -> user_acceptance
 ```
 
-The flow may pause or move backward when evidence fails. It never authorizes every stage automatically.
+The flow may pause or move backward when evidence fails. Within a fixed parent authorization envelope, clean local gates continue automatically by default; this does not authorize stages outside that envelope.
 
 ## Intake, preflight, and claim
 
@@ -46,13 +46,15 @@ Before writing, declare:
 - superseded paths, permitted legacy adapters, and negative proof when replacing behavior; and
 - stop condition and status.
 
+For a multi-gate outcome, declare one parent envelope plus distinct child claims. The parent names every permitted child phase, finite reviewer request/round ceiling, active cost mode, terminal human boundary, forbidden operations, automatic-continuation predicates, and selective-stop predicates. Child claims bind the exact current candidate and scope; creating the next child claim is automatic after a clean gate only when it is already enumerated by the parent.
+
 Put the claim in the automation run manifest, existing adequate authority record, or task return channel. Do not create REVIEW solely to hold an ordinary claim. Resolve overlapping ownership before writing.
 
 ## Select automation or manual work
 
 Read [automation.md](automation.md). A clean, scoped, testable, privacy-safe, provider-ready local development task normally selects automated Codex write -> explicit tests -> DeepSeek read-only structured review -> bounded fix loop. It stops at an unstaged, uncommitted local candidate.
 
-Use a documented manual path or fail closed for an initial dirty tree, unknown scope/tests, missing provider or verified credential predicate, privacy block, high-risk live checkpoint, overlapping writer, or user-requested manual work. A manual path retains the same fixed baseline, evidence, tests, and authorization gates.
+Use a documented manual path or fail closed for an initial dirty tree, unknown scope/tests, missing provider or verified credential predicate, privacy block, high-risk live checkpoint, overlapping writer, or user-requested manual work. A manual path retains the same fixed baseline, evidence, tests, and authorization gates. Manual transport does not imply a mandatory user STOP between already authorized local child gates.
 
 ## Discussion and checkpoint routing
 
@@ -167,6 +169,6 @@ Every adapter receives the same fixed base, role/scope, authority, evidence, pri
 
 Before advancing, confirm evidence belongs to the claimed layer, tests bind to the current candidate, blocking findings are disposed, external state matches evidence, rollback/exit exists, and authority covers the next action.
 
-Stop when authority, ownership, target identity, fixed baseline, critical evidence, privacy, rollback, a blocking finding, unknown inventory, reachable bypass, or live counterevidence prevents the next gate. Complete safe read-only checks and record the minimum recovery input.
+Continue to the next child gate by default when it is inside the parent envelope and authority, ownership, identity, evidence, tests, findings, privacy, active cost mode, and rollback all pass. In `COST_CALIBRATION`, observed token volume or estimated cost is telemetry rather than a STOP; technical incompatibility and finite request/round exhaustion remain stops. Stop selectively on an explicit checkpoint, envelope exit, drift, failed evidence/provider/test after authorized recovery is exhausted, blocking finding, unknown inventory, reachable bypass, missing rollback, required human input, or live counterevidence. Complete safe read-only checks and record the minimum recovery input.
 
 Stage, commit, push, PR, merge, tag, artifact publication, release, deploy, production action, and destructive change remain separate. CI is one of `passed`, `failed`, `queued`, `in_progress`, `cancelled`, `skipped`, `timed_out`, or `not_run`; only `passed` tied to the current commit is passing evidence.
