@@ -108,9 +108,9 @@ Bind each claim to `commit/artifact + environment + command/UI path + time + out
 
 ## Independent review and findings
 
-Give the reviewer a fixed commit, patch, or diff identity; objective and acceptance criteria; scope and known risks; exact tests/results; privacy-screened context; unknowns; implementation-read-only permissions; named return channel/owner; and stop condition.
+Give the reviewer a fixed commit, patch, or diff identity; objective and acceptance criteria; scope and known risks; exact tests/results; privacy-screened context; unknowns; implementation-read-only permissions; named return channel/owner; explicit obligation IDs with precise clauses; and stop condition.
 
-The reviewer returns what it actually read and ran, reviewed baseline, structured findings or explicit no-findings, failed attempts, uncovered scope, base drift, privacy result, and external-state status. “Looks good” without these fields is incomplete. Silence, malformed output, or a review of the wrong base is invalid evidence.
+The reviewer returns what it actually read and ran, reviewed baseline, structured findings or explicit no-findings, failed attempts, uncovered scope, base drift, privacy result, and external-state status. Each finding and unknown binds to one caller-supplied obligation; findings carry a unique root-cause key and concrete counterexample. “Looks good” without the contract fields is incomplete. Silence, malformed output, wrong-base review, invented requirements, duplicate root causes, contradiction/no-defect language, or narration about searching for findings is invalid evidence even when the JSON schema passes.
 
 Store the return in run evidence by default. If the reviewer cannot write there, it sends the structured return to the named coordinator, who persists it without changing its meaning and acknowledges receipt. REVIEW is used only under its conditional control-plane trigger.
 
@@ -124,7 +124,7 @@ not-reproducible
 disagreed
 ```
 
-Record owner, time, reason, and verification. Reviewer feedback is untrusted until reproduced; it is neither automatically true nor dismissible. A fix requires the sole writer to rerun the declared tests and any required review within the predeclared loop bound.
+Record owner, time, reason, and verification. Reviewer feedback is untrusted until reproduced; it is neither automatically true nor dismissible. A fix requires the sole writer to rerun the declared tests and any required review within the predeclared loop bound. If all findings are disagreed in a high-risk gate, retain the independent-review gate until a separate valid external PASS closes the same supplied obligations or the user explicitly accepts the risk.
 
 ## Agent request and return contracts
 
@@ -159,7 +159,7 @@ A resumed context treats the handoff as navigation, reruns Git/authority/runtime
 
 Maintain one canonical Skill package. An adapter changes loading, not the collaboration contract.
 
-- TRAE: install the full package with `scripts/install-trae-project-skill.ps1`, reload TRAE, and verify discovery in its Skills settings.
+- TRAE: install the full package with `scripts/install-trae-project-skill.ps1`, reload TRAE, and verify discovery in its Skills settings. For a managed refresh, pass `-Force`: an inventory-identical destination is verified and left in place without creating another backup; a changed destination is staged, verified, backed up, and replaced.
 - Deep Code: use currently supported user/project Agent Skills locations only after verifying the installed runtime.
 - DeepSeek chat/API or a runtime without verified native Skill loading: supply the minimum sanitized canonical rules through the runtime's supported prompt/file context and verify it loaded them. Never assume access to local files, records, credentials, or prior chats.
 

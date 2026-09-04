@@ -1,0 +1,13 @@
+{
+  "name": "deepseek-review-worker",
+  "private": true,
+  "version": "3.2.1",
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/review-core.test.mjs test/generation-registry.test.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "zod": "4.5.4"
+  }
+}
