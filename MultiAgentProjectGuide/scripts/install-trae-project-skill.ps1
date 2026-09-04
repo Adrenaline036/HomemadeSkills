@@ -66,6 +66,17 @@ function Get-PackageInventory {
 $sourceInventory = @(Get-PackageInventory -Root $packagePath)
 if ($sourceInventory.Count -eq 0) { throw 'The source Skill package is empty.' }
 
+if ($Force -and (Test-Path -LiteralPath $destinationPath -PathType Container)) {
+    $currentInventory = @(Get-PackageInventory -Root $destinationPath)
+    $currentDiff = @(Compare-Object $sourceInventory $currentInventory -Property RelativePath, Length, SHA256)
+    if ($currentDiff.Count -eq 0) {
+        Write-Output "Project Skill is already current: $destinationPath"
+        Write-Output "Verified package files: $($sourceInventory.Count)"
+        Write-Output 'No backup or replacement was created.'
+        exit 0
+    }
+}
+
 New-Item -ItemType Directory -Path $skillsContainer -Force | Out-Null
 Copy-Item -LiteralPath $packagePath -Destination $pendingPath -Recurse
 

@@ -78,7 +78,7 @@ Projects may extend the source category vocabulary by repeating `--allow-categor
 
 The validator checks schema, IDs, event order, time zones, required fields, enums, fixed/accepted-risk evidence, recurrence links, append-only history, privacy patterns, private placement, and optional REVIEW consistency. It never edits the ledger. PASS proves structure and internal consistency only; it does not prove the product fixed, the gate passed, or any action was authorized.
 
-For provider-review incidents, keep the provider observation separate from the harness diagnosis. Record the request/response classification, model, finish reason, content/reasoning presence, sanitized usage, schema/LOAD ACK result, request ceiling, retry state, and evidence path. Do not label an empty response as a product failure or fixed review result. A harness correction may append `REMEDIATION`; append `VERIFIED` only after the relevant fixture or real-entrypoint prevention check passes at the declared evidence layer.
+For provider-review incidents, keep the provider observation separate from the harness diagnosis. Record the request/response classification, model, finish reason, sanitized usage, compact-return validation, stable-prefix hash, request count, retry state, and evidence path. Do not label an empty response as a product failure or fixed review result. A harness correction may append `REMEDIATION`; append `VERIFIED` only after the relevant fixture or real-entrypoint prevention check passes at the declared evidence layer.
 
 ## Minimal migration
 
