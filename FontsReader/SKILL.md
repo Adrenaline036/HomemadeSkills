@@ -1,11 +1,11 @@
 ---
 name: fonts-reader
-description: Audit anime ASS/SSA subtitles, identify fonts actually used by dialogue styles and inline overrides, accelerate repeated package lookups with a local metadata manifest, prefer exact matches from user font libraries or series files, fall back to Windows fonts only when that preferred tier has no exact match, and collect one editable per-series font folder with manifests and hashes. Use when Codex or TRAE is asked to read animation directories, find subtitle fonts, prepare Jellyfin subtitle fonts, report missing or ambiguous fonts, archive fonts copied from the local Windows installation, or build a subtitle-font package without changing media files.
+description: Audit anime ASS/SSA subtitles, identify fonts actually used by dialogue styles and inline overrides, search a font package's bundled face index before local metadata or a full scan, prefer exact matches from user font libraries or series files, fall back to Windows fonts only when that preferred tier has no exact match, and collect one editable per-series font folder with manifests and hashes. Use when Codex, DSH Desktop, or TRAE is asked to read animation directories, find subtitle fonts, prepare Jellyfin subtitle fonts, report missing or ambiguous fonts, archive fonts copied from the local Windows installation, or build a subtitle-font package without changing media files.
 ---
 
 # FontsReader
 
-Collect subtitle fonts conservatively and reproducibly. Use this same package in Codex and TRAE; do not maintain runtime-specific copies of the workflow.
+Collect subtitle fonts conservatively and reproducibly. Use this same package in Codex, DSH Desktop, and TRAE; do not maintain runtime-specific copies of the workflow.
 
 ## Protect media and fonts
 
@@ -30,7 +30,21 @@ Obtain or infer:
 
 Verify every path live. If a requested path is inaccessible, report it instead of silently omitting it.
 
-## Build and reuse font-package metadata
+## Prefer the font package's own index
+
+For a large font package, first look for its bundled face index at `<font-root>/字体索引/字体库-字面索引.csv`. `audit` and `collect` use that index before walking or opening the full font library. Pass the package root—not the `字体索引` directory itself—as `--font-root`.
+
+The bundled index is treated as lookup metadata only. FontsReader resolves every indexed relative path inside the declared font root and uses the indexed internal names, face number, bold, and italic attributes. It does not write into the package or trust paths that escape it.
+
+Fall back to a complete font scan only when:
+
+- the bundled face index is absent, unreadable, malformed, or unsafe;
+- an exact requested internal name is absent from the index; or
+- an indexed candidate needed for the current request no longer exists.
+
+Do not start with a recursive full-library scan merely to confirm a valid bundled index. `--refresh-font-manifest` is the explicit opt-in for a forced complete rebuild.
+
+## Build and reuse local font-package metadata
 
 Index each large user font library before the first subtitle audit:
 
@@ -43,9 +57,9 @@ The helper writes local JSON metadata under `%LOCALAPPDATA%\FontsReader\font-pac
 
 The metadata records a relative font path, file size and modification time, the package inventory fingerprint, every TTC/OTC face, normalized internal names, primary and strong names, and bold/italic attributes. It never stores the machine-specific absolute font-library path and does not add origin fields to the delivered series manifest.
 
-`audit` and `collect` load this metadata automatically for every `--font-root`:
+When a usable bundled face index is unavailable, `audit` and `collect` load this local metadata automatically for every `--font-root`:
 
-1. If the inventory fingerprint and file metadata still match, use indexed faces before opening font files.
+1. Prefer the bundled face index when present; otherwise, if the local inventory fingerprint and file metadata still match, use cached faces before opening font files.
 2. If metadata is absent, corrupt, from another root, or the font inventory changed, rebuild it with a complete scan.
 3. If a newly requested exact name is absent from an otherwise valid cache, perform one fallback full scan. Record a confirmed negative lookup so the unchanged package is not rescanned for that name on later runs.
 4. Continue to search loose series fonts directly and use Windows fonts only after the whole preferred tier has no exact candidate.
@@ -117,6 +131,7 @@ For every series:
 5. Confirm the number of parsed subtitle files, decode errors, unique requested faces, matched faces, missing faces, and ambiguous faces.
 6. If Windows fonts were archived, compare their hashes with the corresponding unified package files.
 7. For a large reusable font library, run `index` twice and confirm the first run reports `built` and the unchanged second run reports `hit`. When testing a cache miss, confirm only the first new absent query reports `fallback scan`; the next unchanged run must use the recorded negative lookup.
+8. When the font package includes `字体索引/字体库-字面索引.csv`, confirm an indexed exact-name audit reports `font package index hit` without `fallback scan`; separately test an absent indexed name and confirm that only then does the full-scan fallback run.
 
 Label the evidence accurately: parser/helper test, local filesystem collection, MKV attachment inspection, Jellyfin playback, and user acceptance are separate layers. Font collection alone does not prove Jellyfin rendering or playback.
 
@@ -126,4 +141,4 @@ Label the evidence accurately: parser/helper test, local filesystem collection, 
 - Use `scripts/install-trae-project-skill.ps1` to install this same folder into a TRAE project's `.agents/skills/FontsReader` directory with duplicate protection and recoverable replacement.
 - Use `assets/AGENTS.template.md` only when a repository needs a short tracked entrypoint that tells agents to load this Skill.
 
-Install for Codex by copying the complete `FontsReader` folder to `%USERPROFILE%\.codex\skills\fonts-reader`. Install for TRAE through its Skills UI or the bundled project installer. Keep `SKILL.md`, `agents/`, `scripts/`, and `assets/` together.
+Install for Codex by copying the complete `FontsReader` folder to `%USERPROFILE%\.codex\skills\fonts-reader`. Install for DSH Desktop by copying it to `%APPDATA%\dsh-desktop\harness\skills\fonts-reader`; the Harness filesystem provider watches this user-level root, but restart DSH Desktop if the current session does not refresh its Skill list. Install for TRAE through its Skills UI or the bundled project installer. Keep `SKILL.md`, `agents/`, `scripts/`, and `assets/` together.

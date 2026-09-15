@@ -30,6 +30,8 @@ except ImportError as exc:  # pragma: no cover - exercised by dependency check
 SUBTITLE_EXTENSIONS = {".ass", ".ssa"}
 FONT_EXTENSIONS = {".ttf", ".otf", ".ttc", ".otc"}
 FONT_PACKAGE_MANIFEST_SCHEMA = 1
+PACKAGED_INDEX_DIRECTORY = "字体索引"
+PACKAGED_FACE_INDEX_FILENAME = "字体库-字面索引.csv"
 INLINE_FONT_RE = re.compile(r"\\fn([^\\})]+?)(?=\\|\)|})", re.IGNORECASE)
 INVALID_FILENAME_RE = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
 
@@ -72,6 +74,7 @@ class FontPackageCatalog:
     inventory_fingerprint: str
     file_count: int
     cache_state: str
+    package_index_signature: str | None = None
 
 
 def normalize_name(value: str) -> str:
@@ -345,6 +348,153 @@ def manifest_path_for(root: Path, manifest_dir: Path) -> Path:
     return manifest_dir / f"{safe_filename(root.name)}-{font_root_key(root)[:12]}.json"
 
 
+def packaged_face_index_path(root: Path) -> Path:
+    return root / PACKAGED_INDEX_DIRECTORY / PACKAGED_FACE_INDEX_FILENAME
+
+
+def packaged_index_signature(index_path: Path) -> str:
+    digest = hashlib.sha256()
+    for path in sorted(index_path.parent.iterdir(), key=lambda item: item.name.casefold()):
+        if not path.is_file():
+            continue
+        stat = path.stat()
+        digest.update(path.name.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(str(stat.st_size).encode("ascii"))
+        digest.update(b"\0")
+        digest.update(str(stat.st_mtime_ns).encode("ascii"))
+        digest.update(b"\n")
+    return digest.hexdigest()
+
+
+def split_packaged_index_names(value: object) -> set[str]:
+    names: set[str] = set()
+    for item in str(value or "").split("|"):
+        normalized = normalize_name(item)
+        if normalized:
+            names.add(normalized)
+    return names
+
+
+def package_index_negative_cache_path(manifest_path: Path) -> Path:
+    return manifest_path.with_name(f"{manifest_path.stem}-package-index-negatives.json")
+
+
+def cached_negative_queries_for_package_index(
+    root: Path,
+    manifest_path: Path,
+    index_signature: str,
+) -> set[str]:
+    cache_path = package_index_negative_cache_path(manifest_path)
+    if not cache_path.is_file():
+        return set()
+    try:
+        payload = json.loads(cache_path.read_text(encoding="utf-8"))
+        if payload.get("schema_version") != FONT_PACKAGE_MANIFEST_SCHEMA:
+            return set()
+        if payload.get("font_root_key") != font_root_key(root):
+            return set()
+        if payload.get("package_index_signature") != index_signature:
+            return set()
+        return {str(item) for item in payload.get("negative_queries", [])}
+    except (OSError, ValueError, TypeError, json.JSONDecodeError):
+        return set()
+
+
+def write_package_index_negative_cache(catalog: FontPackageCatalog) -> None:
+    if catalog.package_index_signature is None:
+        return
+    cache_path = package_index_negative_cache_path(catalog.manifest_path)
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "schema_version": FONT_PACKAGE_MANIFEST_SCHEMA,
+        "generator": "fonts-reader",
+        "font_root_key": font_root_key(catalog.root),
+        "package_index_signature": catalog.package_index_signature,
+        "negative_queries": sorted(catalog.negative_queries),
+    }
+    temporary = cache_path.with_suffix(cache_path.suffix + ".tmp")
+    temporary.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    os.replace(temporary, cache_path)
+
+
+def load_packaged_index_catalog(root: Path, manifest_path: Path, index_path: Path) -> FontPackageCatalog:
+    required_columns = {
+        "文件相对路径",
+        "字面序号",
+        "家族名",
+        "全名",
+        "PostScript名",
+        "加粗",
+        "斜体",
+        "可搜索名称",
+    }
+    aggregated: dict[tuple[Path, int], dict[str, object]] = {}
+    with index_path.open("r", encoding="utf-8-sig", newline="") as handle:
+        reader = csv.DictReader(handle)
+        if reader.fieldnames is None or not required_columns.issubset(reader.fieldnames):
+            missing = sorted(required_columns - set(reader.fieldnames or ()))
+            raise ValueError(f"packaged face index is missing columns: {missing}")
+        for row in reader:
+            relative_text = str(row["文件相对路径"] or "").strip().replace("\\", "/")
+            relative = Path(relative_text)
+            if not relative_text or relative.is_absolute() or ".." in relative.parts:
+                raise ValueError(f"unsafe packaged index path: {relative_text}")
+            path = Path(os.path.abspath(os.path.normpath(str(root / relative))))
+            if not is_relative_to(path, root) or path.suffix.casefold() not in FONT_EXTENSIONS:
+                raise ValueError(f"invalid packaged index font path: {relative_text}")
+            face_index = int(str(row["字面序号"] or "0").strip())
+            key = (path, face_index)
+            entry = aggregated.setdefault(
+                key,
+                {
+                    "names": set(),
+                    "primary_names": set(),
+                    "strong_names": set(),
+                    "bold": False,
+                    "italic": False,
+                },
+            )
+            primary_names = split_packaged_index_names(row["家族名"])
+            strong_names = split_packaged_index_names(row["全名"]) | split_packaged_index_names(row["PostScript名"])
+            entry["primary_names"].update(primary_names)
+            entry["strong_names"].update(strong_names)
+            entry["names"].update(split_packaged_index_names(row["可搜索名称"]) | primary_names | strong_names)
+            entry["bold"] = bool(entry["bold"]) or parse_ass_bool(str(row["加粗"] or "0"))
+            entry["italic"] = bool(entry["italic"]) or parse_ass_bool(str(row["斜体"] or "0"))
+
+    candidates = [
+        FontCandidate(
+            path=path,
+            face_index=face_index,
+            names=frozenset(entry["names"]),
+            primary_names=frozenset(entry["primary_names"]),
+            strong_names=frozenset(entry["strong_names"]),
+            bold=bool(entry["bold"]),
+            italic=bool(entry["italic"]),
+            is_system=False,
+        )
+        for (path, face_index), entry in sorted(aggregated.items(), key=lambda item: (str(item[0][0]).casefold(), item[0][1]))
+        if entry["names"]
+    ]
+    signature = packaged_index_signature(index_path)
+    catalog = FontPackageCatalog(
+        root=root,
+        manifest_path=manifest_path,
+        candidates=candidates,
+        negative_queries=cached_negative_queries_for_package_index(root, manifest_path, signature),
+        inventory_fingerprint=f"package-index:{signature}",
+        file_count=len({candidate.path for candidate in candidates}),
+        cache_state="package-index",
+        package_index_signature=signature,
+    )
+    print(
+        f"font package index hit: {index_path} ({catalog.file_count} files, {len(candidates)} faces)",
+        file=sys.stderr,
+    )
+    return catalog
+
+
 def font_inventory(root: Path) -> tuple[list[Path], str]:
     files = [path for path, _ in discover_font_files([(root, False)])]
     digest = hashlib.sha256()
@@ -402,6 +552,7 @@ def serialize_font_manifest(catalog: FontPackageCatalog, files: list[Path]) -> d
         "font_root_key": font_root_key(catalog.root),
         "inventory_fingerprint": catalog.inventory_fingerprint,
         "complete_scan": True,
+        "package_index_signature": catalog.package_index_signature,
         "negative_queries": sorted(catalog.negative_queries),
         "files": file_rows,
     }
@@ -415,7 +566,12 @@ def write_font_manifest(catalog: FontPackageCatalog, files: list[Path]) -> None:
     os.replace(temporary, catalog.manifest_path)
 
 
-def build_font_catalog(root: Path, manifest_path: Path, negative_queries: set[str] | None = None) -> FontPackageCatalog:
+def build_font_catalog(
+    root: Path,
+    manifest_path: Path,
+    negative_queries: set[str] | None = None,
+    package_index_signature: str | None = None,
+) -> FontPackageCatalog:
     files, fingerprint = font_inventory(root)
     candidates = scan_font_files(files)
     catalog = FontPackageCatalog(
@@ -426,6 +582,7 @@ def build_font_catalog(root: Path, manifest_path: Path, negative_queries: set[st
         inventory_fingerprint=fingerprint,
         file_count=len(files),
         cache_state="built",
+        package_index_signature=package_index_signature,
     )
     write_font_manifest(catalog, files)
     print(
@@ -454,7 +611,20 @@ def candidate_from_manifest(root: Path, relative_path: str, face: dict[str, obje
     )
 
 
-def load_font_catalog(root: Path, manifest_path: Path, refresh: bool = False) -> FontPackageCatalog:
+def load_font_catalog(
+    root: Path,
+    manifest_path: Path,
+    refresh: bool = False,
+    prefer_package_index: bool = False,
+) -> FontPackageCatalog:
+    if prefer_package_index and not refresh:
+        index_path = packaged_face_index_path(root)
+        if index_path.is_file():
+            try:
+                return load_packaged_index_catalog(root, manifest_path, index_path)
+            except (OSError, UnicodeError, ValueError, KeyError, TypeError, csv.Error) as exc:
+                print(f"font package index invalid; falling back to scan: {index_path}: {exc}", file=sys.stderr)
+
     files, fingerprint = font_inventory(root)
     if refresh or not manifest_path.is_file():
         return build_font_catalog(root, manifest_path)
@@ -515,6 +685,35 @@ def ensure_manifest_queries(
     requested_names: set[str],
     loose_names: set[str],
 ) -> list[FontPackageCatalog]:
+    package_needed = requested_names - loose_names
+    for index, catalog in enumerate(catalogs):
+        if catalog.cache_state != "package-index":
+            continue
+        missing_paths: list[Path] = []
+        for candidate in catalog.candidates:
+            if not candidate.names & package_needed:
+                continue
+            try:
+                resolved_candidate = candidate.path.resolve(strict=True)
+            except OSError:
+                missing_paths.append(candidate.path)
+                continue
+            if not is_relative_to(resolved_candidate, catalog.root):
+                raise RuntimeError(f"packaged index candidate escapes font root: {candidate.path}")
+        missing_paths = sorted(set(missing_paths), key=lambda path: str(path).casefold())
+        if missing_paths:
+            print(
+                f"font package index stale; fallback scan: {catalog.root} "
+                f"({len(missing_paths)} indexed paths missing)",
+                file=sys.stderr,
+            )
+            catalogs[index] = build_font_catalog(
+                catalog.root,
+                catalog.manifest_path,
+                catalog.negative_queries,
+                catalog.package_index_signature,
+            )
+
     available = loose_names | catalog_name_set(catalogs)
     unresolved = requested_names - available
     if not unresolved:
@@ -524,12 +723,18 @@ def ensure_manifest_queries(
         pending = unresolved - catalog.negative_queries
         if not pending:
             continue
-        if catalog.cache_state == "hit":
+        if catalog.cache_state in {"hit", "package-index"}:
+            source = "font package index" if catalog.cache_state == "package-index" else "font package manifest"
             print(
-                f"font package manifest miss; fallback scan: {catalog.root} ({len(pending)} names)",
+                f"{source} miss; fallback scan: {catalog.root} ({len(pending)} names)",
                 file=sys.stderr,
             )
-            catalog = build_font_catalog(catalog.root, catalog.manifest_path, catalog.negative_queries)
+            catalog = build_font_catalog(
+                catalog.root,
+                catalog.manifest_path,
+                catalog.negative_queries,
+                catalog.package_index_signature,
+            )
             catalogs[index] = catalog
 
         names_after_scan = {name for candidate in catalog.candidates for name in candidate.names}
@@ -540,6 +745,7 @@ def ensure_manifest_queries(
             catalog.inventory_fingerprint = fingerprint
             catalog.file_count = len(files)
             write_font_manifest(catalog, files)
+            write_package_index_negative_cache(catalog)
         available = loose_names | catalog_name_set(catalogs)
         unresolved = requested_names - available
         if not unresolved:
@@ -812,7 +1018,12 @@ def main() -> int:
     if not series_roots:
         raise SystemExit(f"{args.mode} mode requires at least one --series")
     font_catalogs = [
-        load_font_catalog(root, manifest_path_for(root, manifest_dir), refresh=args.refresh_font_manifest)
+        load_font_catalog(
+            root,
+            manifest_path_for(root, manifest_dir),
+            refresh=args.refresh_font_manifest,
+            prefer_package_index=True,
+        )
         for root in font_roots
     ]
 

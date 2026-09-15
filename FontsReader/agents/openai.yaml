@@ -1,4 +1,4 @@
 interface:
   display_name: "FontsReader"
-  short_description: "用字体包元数据加速字幕字体审计与系列字体收集"
-  default_prompt: "Use $fonts-reader to audit anime subtitles and collect the exact required fonts into one editable per-series folder."
+  short_description: "优先用字体包自带索引加速字幕字体审计与系列字体收集"
+  default_prompt: "Use $fonts-reader to audit anime subtitles, search any bundled font-package index first, and collect the exact required fonts into one editable per-series folder."
